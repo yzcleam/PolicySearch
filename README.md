@@ -116,6 +116,12 @@ npm run deploy
 6. 执行数据库迁移并记录 `schema_version`；
 7. 数据库为空时导入示例数据，已有数据则跳过。
 
+Python 依赖默认通过 `PIP_INDEX_URL` 使用清华 PyPI 镜像；服务器网络不同可改为内网镜像或官方源：
+
+```ini
+PIP_INDEX_URL=https://pypi.org/simple
+```
+
 非交互部署：
 
 ```bash
@@ -247,6 +253,7 @@ WSL_DISTRO=Ubuntu
 | `OPENSEARCH_BASE_IMAGE` | `opensearchproject/opensearch:2.19.3` | 构建基础镜像 |
 | `SEED_COUNT` | `320` | 示例数据条数 |
 | `SEED_ON_DEPLOY` | `true` | 部署时是否导入 |
+| `PIP_INDEX_URL` | `https://pypi.tuna.tsinghua.edu.cn/simple` | 部署时 pip 使用的 PyPI 镜像 |
 | `DOCKER_MODE` | `auto` | `auto` / `local` / `wsl` |
 | `WSL_DISTRO` | `Ubuntu` | WSL Docker 发行版 |
 | `TZ` | `Asia/Shanghai` | 容器时区 |

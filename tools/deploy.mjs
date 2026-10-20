@@ -59,6 +59,7 @@ const DEFAULTS = {
   OPENSEARCH_CONTAINER: "policy-opensearch",
   SEED_COUNT: "320",
   SEED_ON_DEPLOY: "true",
+  PIP_INDEX_URL: "https://pypi.tuna.tsinghua.edu.cn/simple",
   DOCKER_MODE: "auto",
   WSL_DISTRO: "Ubuntu",
   TZ: "Asia/Shanghai",
@@ -129,6 +130,7 @@ function buildValues(config, docker) {
     OPENSEARCH_CONTAINER: config.OPENSEARCH_CONTAINER,
     SEED_COUNT: config.SEED_COUNT,
     SEED_ON_DEPLOY: config.SEED_ON_DEPLOY,
+    PIP_INDEX_URL: config.PIP_INDEX_URL,
     DOCKER_MODE: "auto",
     WSL_DISTRO: config.WSL_DISTRO || docker?.distro || "Ubuntu",
     TZ: config.TZ,
@@ -340,6 +342,7 @@ function printConfig(values) {
   info(`PostgreSQL: ${values.POSTGRES_USER}@${values.POSTGRES_HOST}:${values.POSTGRES_PORT}/${values.POSTGRES_DB}`);
   info(`PostgreSQL 密码: ${maskSecret(values.POSTGRES_PASSWORD)}`);
   info(`OpenSearch: ${values.OPENSEARCH_URL} · 索引 ${values.OPENSEARCH_INDEX}`);
+  info(`Python 包镜像: ${values.PIP_INDEX_URL}`);
   info(`示例数据: ${values.SEED_ON_DEPLOY === "true" ? `${values.SEED_COUNT} 条` : "不导入"}`);
   if (/[\s$`"\\]/.test(values.POSTGRES_PASSWORD)) {
     warn("密码包含空白或 $ ` \" \\ 等字符，Compose 可能解析异常；建议使用字母、数字、- 和 _。");
@@ -452,6 +455,7 @@ async function main() {
   const venvPython = await ensureVenv({
     upgrade: Boolean(args.upgrade),
     skipInstall: Boolean(args["skip-install"]),
+    pipIndexUrl: values.PIP_INDEX_URL,
   });
 
   step(4, TOTAL_STEPS, "启动 PostgreSQL / OpenSearch 容器");

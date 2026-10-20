@@ -285,7 +285,11 @@ export function pythonPackagesOk(python) {
   return result.ok;
 }
 
-export async function ensureVenv({ upgrade = false, skipInstall = false } = {}) {
+export async function ensureVenv({
+  upgrade = false,
+  skipInstall = false,
+  pipIndexUrl = "",
+} = {}) {
   const base = detectPython();
   if (!base) {
     throw new Error(
@@ -314,10 +318,15 @@ export async function ensureVenv({ upgrade = false, skipInstall = false } = {}) 
     return venvPython;
   }
 
+  const pipEnv = pythonEnv({
+    PIP_DISABLE_PIP_VERSION_CHECK: "1",
+    ...(pipIndexUrl ? { PIP_INDEX_URL: pipIndexUrl } : {}),
+  });
+
   const pipUpgrade = await runStream(
     venvPython,
     ["-m", "pip", "install", "--upgrade", "pip"],
-    { cwd: ROOT, env: pythonEnv() }
+    { cwd: ROOT, env: pipEnv }
   );
   if (pipUpgrade.code !== 0) {
     warn("pip 自身升级失败，继续使用当前 pip。");
@@ -325,7 +334,7 @@ export async function ensureVenv({ upgrade = false, skipInstall = false } = {}) 
 
   const args = ["-m", "pip", "install", "-r", "backend/requirements.txt"];
   if (upgrade) args.push("--upgrade");
-  await runStreamChecked(venvPython, args, { cwd: ROOT, env: pythonEnv() });
+  await runStreamChecked(venvPython, args, { cwd: ROOT, env: pipEnv });
 
   if (!pythonPackagesOk(venvPython)) {
     throw new Error("Python 依赖安装后仍无法导入，请检查 pip 输出。");
