@@ -1,9 +1,29 @@
 $ErrorActionPreference = "Continue"
 
 $root = Split-Path -Parent $PSScriptRoot
-$distro = "Ubuntu-Clean"
-$composeFile = "/mnt/e/PolicySearcher/docker-compose.yml"
-$dockerSh = "/mnt/e/PolicySearcher/scripts/wsl/docker.sh"
+$envFile = Join-Path $root ".env"
+
+function Get-DotEnvValue($path, $key, $default) {
+    if (Test-Path $path) {
+        $pattern = "^\s*" + [regex]::Escape($key) + "\s*="
+        $line = Get-Content $path | Where-Object { $_ -match $pattern } | Select-Object -First 1
+        if ($line) {
+            return (($line -split "=", 2)[1].Trim().Trim('"').Trim("'"))
+        }
+    }
+    return $default
+}
+
+$distro = if ($env:WSL_DISTRO) { $env:WSL_DISTRO } else { Get-DotEnvValue $envFile "WSL_DISTRO" "Ubuntu" }
+$appPort = Get-DotEnvValue $envFile "APP_PORT" "8000"
+$appHost = Get-DotEnvValue $envFile "APP_HOST" "127.0.0.1"
+
+if ($root -notmatch "^[A-Za-z]:\\") {
+    throw "This helper expects the project on a Windows drive (for example C:\Projects\PolicySearcher)."
+}
+$wslRoot = "/mnt/" + $root.Substring(0, 1).ToLower() + (($root.Substring(2) -replace "\\", "/"))
+$composeFile = "$wslRoot/docker-compose.yml"
+$dockerSh = "$wslRoot/scripts/wsl/docker.sh"
 $python = Join-Path $root ".venv\Scripts\python.exe"
 $backend = Join-Path $root "backend"
 
@@ -33,18 +53,18 @@ if (-not $healthy) {
     throw "OpenSearch did not become healthy in time. Check: wsl -d $distro -- docker logs --tail 80 policy-opensearch"
 }
 
-Write-Host "[4/5] Starting FastAPI ..."
-$listener = Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue
+Write-Host "[4/5] Starting FastAPI on port $appPort ..."
+$listener = Get-NetTCPConnection -LocalPort $appPort -State Listen -ErrorAction SilentlyContinue
 if (-not $listener) {
     Start-Process -FilePath $python `
-        -ArgumentList "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000" `
+        -ArgumentList "-m", "uvicorn", "app.main:app", "--host", $appHost, "--port", $appPort `
         -WorkingDirectory $backend -WindowStyle Hidden
 }
 
 $ready = $false
 for ($i = 0; $i -lt 30; $i++) {
     try {
-        $response = Invoke-WebRequest -Uri "http://127.0.0.1:8000/api/health" -TimeoutSec 3 -UseBasicParsing
+        $response = Invoke-WebRequest -Uri "http://127.0.0.1:$appPort/api/health" -TimeoutSec 3 -UseBasicParsing
         if ($response.StatusCode -eq 200) {
             $ready = $true
             break
@@ -54,8 +74,8 @@ for ($i = 0; $i -lt 30; $i++) {
     }
 }
 if (-not $ready) {
-    throw "FastAPI did not start on http://127.0.0.1:8000/"
+    throw "FastAPI did not start on http://127.0.0.1:$appPort/"
 }
 
-Write-Host "[5/5] Stack ready. Opening http://127.0.0.1:8000/"
-Start-Process "http://127.0.0.1:8000/"
+Write-Host "[5/5] Stack ready. Opening http://127.0.0.1:$appPort/"
+Start-Process "http://127.0.0.1:$appPort/"

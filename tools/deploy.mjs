@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -47,21 +48,38 @@ const DEFAULTS = {
   POSTGRES_USER: "policy",
   POSTGRES_PASSWORD: "",
   POSTGRES_DB: "policy_search",
-  POSTGRES_IMAGE: "m.daocloud.io/docker.io/library/postgres:16-alpine",
+  POSTGRES_IMAGE: "postgres:16-alpine",
   POSTGRES_CONTAINER: "policy-postgres",
   OPENSEARCH_HOST: "127.0.0.1",
   OPENSEARCH_PORT: "9200",
   OPENSEARCH_INDEX: "policy_documents",
   OPENSEARCH_IMAGE: "policysearcher/opensearch-ik:2.19.3",
-  OPENSEARCH_BASE_IMAGE:
-    "m.daocloud.io/docker.io/opensearchproject/opensearch:2.19.3",
+  OPENSEARCH_BASE_IMAGE: "opensearchproject/opensearch:2.19.3",
   OPENSEARCH_JAVA_OPTS: "-Xms1g -Xmx1g",
   OPENSEARCH_CONTAINER: "policy-opensearch",
   SEED_COUNT: "320",
   SEED_ON_DEPLOY: "true",
   DOCKER_MODE: "auto",
-  WSL_DISTRO: "Ubuntu-Clean",
+  WSL_DISTRO: "Ubuntu",
   TZ: "Asia/Shanghai",
+  MCP_TRANSPORT: "stdio",
+  MCP_HOST: "127.0.0.1",
+  MCP_PORT: "8765",
+  MCP_PATH: "/mcp",
+  MCP_STATELESS: "false",
+  MCP_LOG_LEVEL: "INFO",
+  MCP_AUTH_REQUIRED: "true",
+  MCP_AUTOSTART: "true",
+  POLICY_API_TOKEN: "",
+  POLICY_API_URL: "",
+  POLICY_API_TIMEOUT: "15",
+  JWT_SECRET: "",
+  JWT_ALGORITHM: "HS256",
+  JWT_EXPIRE_MINUTES: "480",
+  ADMIN_USERNAME: "admin",
+  ADMIN_PASSWORD_HASH: "",
+  API_TOKEN_EXPIRE_DAYS: "90",
+  AUTH_REQUIRED: "false",
 };
 
 const TOTAL_STEPS = 7;
@@ -79,6 +97,13 @@ function buildDatabaseUrl(config) {
   const password = encodeURIComponent(config.POSTGRES_PASSWORD);
   const database = encodeURIComponent(config.POSTGRES_DB);
   return `postgresql+psycopg2://${user}:${password}@${config.POSTGRES_HOST}:${config.POSTGRES_PORT}/${database}`;
+}
+
+function hashAdminPassword(password) {
+  const iterations = 310_000;
+  const salt = crypto.randomBytes(16);
+  const digest = crypto.pbkdf2Sync(password, salt, iterations, 32, "sha256");
+  return `pbkdf2_sha256:${iterations}:${salt.toString("base64url")}:${digest.toString("base64url")}`;
 }
 
 function buildValues(config, docker) {
@@ -105,8 +130,27 @@ function buildValues(config, docker) {
     SEED_COUNT: config.SEED_COUNT,
     SEED_ON_DEPLOY: config.SEED_ON_DEPLOY,
     DOCKER_MODE: "auto",
-    WSL_DISTRO: config.WSL_DISTRO || docker?.distro || "Ubuntu-Clean",
+    WSL_DISTRO: config.WSL_DISTRO || docker?.distro || "Ubuntu",
     TZ: config.TZ,
+    MCP_TRANSPORT: config.MCP_TRANSPORT,
+    MCP_HOST: config.MCP_HOST,
+    MCP_PORT: config.MCP_PORT,
+    MCP_PATH: config.MCP_PATH,
+    MCP_STATELESS: config.MCP_STATELESS,
+    MCP_LOG_LEVEL: config.MCP_LOG_LEVEL,
+    MCP_AUTH_REQUIRED: config.MCP_AUTH_REQUIRED,
+    MCP_AUTOSTART: config.MCP_AUTOSTART,
+    POLICY_API_TOKEN: config.POLICY_API_TOKEN,
+    POLICY_API_URL:
+      config.POLICY_API_URL || `http://127.0.0.1:${config.APP_PORT}`,
+    POLICY_API_TIMEOUT: config.POLICY_API_TIMEOUT,
+    JWT_SECRET: config.JWT_SECRET,
+    JWT_ALGORITHM: config.JWT_ALGORITHM,
+    JWT_EXPIRE_MINUTES: config.JWT_EXPIRE_MINUTES,
+    ADMIN_USERNAME: config.ADMIN_USERNAME,
+    ADMIN_PASSWORD_HASH: config.ADMIN_PASSWORD_HASH,
+    API_TOKEN_EXPIRE_DAYS: config.API_TOKEN_EXPIRE_DAYS,
+    AUTH_REQUIRED: config.AUTH_REQUIRED,
   };
 }
 
@@ -204,6 +248,7 @@ async function askSeedCount(prompter, defaultValue) {
 async function collectConfig(config, args) {
   if (args.port) config.APP_PORT = String(args.port);
   let overwrite = true;
+  let generatedAdminPassword = null;
 
   if (!args.yes) {
     const prompter = await createPrompter();
@@ -254,6 +299,18 @@ async function collectConfig(config, args) {
       ))
         ? "true"
         : "false";
+      config.ADMIN_USERNAME = await askNonEmpty(
+        prompter,
+        "管理员用户名",
+        config.ADMIN_USERNAME
+      );
+      const adminPassword = await prompter.ask(
+        "管理员密码（回车保留当前值/首次部署自动生成）",
+        ""
+      );
+      if (adminPassword) {
+        config.ADMIN_PASSWORD_HASH = hashAdminPassword(adminPassword);
+      }
       if (fs.existsSync(ENV_FILE) && !args.force) {
         overwrite = await prompter.confirm(".env 已存在，是否覆盖？", true);
       }
@@ -267,8 +324,15 @@ async function collectConfig(config, args) {
     info(`已生成随机 PostgreSQL 密码：${maskSecret(config.POSTGRES_PASSWORD)}`);
   }
   if (args.reset) config.SEED_ON_DEPLOY = "true";
+  if (!config.JWT_SECRET) {
+    config.JWT_SECRET = crypto.randomBytes(32).toString("base64url");
+  }
+  if (!config.ADMIN_PASSWORD_HASH) {
+    generatedAdminPassword = randomPassword(18);
+    config.ADMIN_PASSWORD_HASH = hashAdminPassword(generatedAdminPassword);
+  }
 
-  return { config, overwrite };
+  return { config, overwrite, generatedAdminPassword };
 }
 
 function printConfig(values) {
@@ -341,7 +405,7 @@ async function main() {
   if (!docker) {
     throw new Error(
       "未检测到可用的 Docker Engine。请启动 Docker Desktop/Engine；" +
-        "Windows 也可使用 WSL 内的 Docker（设置 DOCKER_MODE=wsl，WSL_DISTRO=Ubuntu-Clean）。"
+        "Windows 也可使用 WSL 内的 Docker（设置 DOCKER_MODE=wsl，WSL_DISTRO=Ubuntu）。"
     );
   }
   if (!docker.composeCmd) {
@@ -367,7 +431,8 @@ async function main() {
   }
 
   step(2, TOTAL_STEPS, "配置与 .env");
-  const { config: configured, overwrite } = await collectConfig(config, args);
+  const { config: configured, overwrite, generatedAdminPassword } =
+    await collectConfig(config, args);
   validateConfig(configured);
   const values = buildValues(configured, docker);
   for (const [key, value] of Object.entries(initial)) {
@@ -443,6 +508,12 @@ async function main() {
   info(`应用入口: http://127.0.0.1:${values.APP_PORT}/`);
   info(`API 文档: http://127.0.0.1:${values.APP_PORT}/docs`);
   info(`OpenSearch: ${values.OPENSEARCH_URL}`);
+  info(`管理员用户名: ${values.ADMIN_USERNAME}`);
+  if (generatedAdminPassword) {
+    console.log("");
+    console.log(c.bold(c.yellow("初始管理员密码（只显示一次，请立即保存）：")));
+    console.log(c.bold(c.yellow(`  ${generatedAdminPassword}`)));
+  }
   console.log("");
   console.log(c.bold(c.green("下一步：npm start")));
   console.log(c.dim("  停止容器：npm run infra:down"));

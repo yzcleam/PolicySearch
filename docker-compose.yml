@@ -2,7 +2,7 @@ name: policysearcher
 
 services:
   postgres:
-    image: ${POSTGRES_IMAGE:-m.daocloud.io/docker.io/library/postgres:16-alpine}
+    image: ${POSTGRES_IMAGE:-postgres:16-alpine}
     container_name: ${POSTGRES_CONTAINER:-policy-postgres}
     restart: unless-stopped
     environment:
@@ -28,7 +28,7 @@ services:
     build:
       context: ./deploy/opensearch
       args:
-        OPENSEARCH_BASE_IMAGE: ${OPENSEARCH_BASE_IMAGE:-m.daocloud.io/docker.io/opensearchproject/opensearch:2.19.3}
+        OPENSEARCH_BASE_IMAGE: ${OPENSEARCH_BASE_IMAGE:-opensearchproject/opensearch:2.19.3}
     image: ${OPENSEARCH_IMAGE:-policysearcher/opensearch-ik:2.19.3}
     container_name: ${OPENSEARCH_CONTAINER:-policy-opensearch}
     restart: unless-stopped

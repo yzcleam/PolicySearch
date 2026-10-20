@@ -1,0 +1,648 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "tools": [
+      {
+        "name": "policy_search_documents",
+        "title": "Search policy documents",
+        "description": "检索中文政策文档。输入自然语言查询、检索模式、字段过滤和分页参数；返回文档摘要、分面统计和高亮片段。需要完整正文时，再调用 policy_get_document。query 为空时按 filters 浏览并按发布日期倒序返回。",
+        "inputSchema": {
+          "$defs": {
+            "SearchFilters": {
+              "additionalProperties": false,
+              "properties": {
+                "issuers": {
+                  "description": "发布机关，例如：国务院、国家税务总局。",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 20,
+                  "title": "Issuers",
+                  "type": "array"
+                },
+                "categories": {
+                  "description": "政策类型，例如：税收优惠、科技创新。",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 20,
+                  "title": "Categories",
+                  "type": "array"
+                },
+                "regions": {
+                  "description": "适用地区，例如：全国、广东省、深圳市。",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 20,
+                  "title": "Regions",
+                  "type": "array"
+                },
+                "tags": {
+                  "description": "主题标签，例如：减税降费、专精特新。",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 20,
+                  "title": "Tags",
+                  "type": "array"
+                },
+                "date_from": {
+                  "anyOf": [
+                    {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "发布日期下界，ISO 8601 日期，例如 2020-01-01。",
+                  "title": "Date From"
+                },
+                "date_to": {
+                  "anyOf": [
+                    {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "发布日期上界，ISO 8601 日期，例如 2024-12-31。",
+                  "title": "Date To"
+                }
+              },
+              "title": "SearchFilters",
+              "type": "object"
+            }
+          },
+          "properties": {
+            "query": {
+              "default": "",
+              "description": "自然语言或关键词查询。空字符串表示不限制关键词，仅按 filters 浏览。示例：增值税留抵退税。",
+              "title": "Query",
+              "type": "string"
+            },
+            "mode": {
+              "default": "smart",
+              "description": "检索模式。smart：短语+分词相关度+容错；keyword：BM25；exact：短语匹配；fuzzy：编辑距离容错。",
+              "enum": [
+                "smart",
+                "keyword",
+                "exact",
+                "fuzzy"
+              ],
+              "title": "Mode",
+              "type": "string"
+            },
+            "filters": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/SearchFilters"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "精确匹配过滤条件；多个字段之间为 AND 关系。"
+            },
+            "page": {
+              "default": 1,
+              "description": "页码，从 1 开始。",
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            },
+            "size": {
+              "default": 10,
+              "description": "每页返回条数，最大 50；MCP 场景建议 3-10。",
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Size",
+              "type": "integer"
+            },
+            "sort": {
+              "default": "relevance",
+              "description": "排序方式：相关度、发布日期倒序、发布日期正序。",
+              "enum": [
+                "relevance",
+                "date_desc",
+                "date_asc"
+              ],
+              "title": "Sort",
+              "type": "string"
+            },
+            "slop": {
+              "default": 2,
+              "description": "exact/smart 模式下短语允许的词间距。",
+              "maximum": 10,
+              "minimum": 0,
+              "title": "Slop",
+              "type": "integer"
+            }
+          },
+          "title": "policy_search_documentsArguments",
+          "type": "object"
+        },
+        "outputSchema": {
+          "$defs": {
+            "FacetBucket": {
+              "additionalProperties": false,
+              "properties": {
+                "value": {
+                  "title": "Value",
+                  "type": "string"
+                },
+                "count": {
+                  "minimum": 1,
+                  "title": "Count",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "value",
+                "count"
+              ],
+              "title": "FacetBucket",
+              "type": "object"
+            },
+            "Facets": {
+              "additionalProperties": false,
+              "properties": {
+                "issuers": {
+                  "items": {
+                    "$ref": "#/$defs/FacetBucket"
+                  },
+                  "title": "Issuers",
+                  "type": "array"
+                },
+                "categories": {
+                  "items": {
+                    "$ref": "#/$defs/FacetBucket"
+                  },
+                  "title": "Categories",
+                  "type": "array"
+                },
+                "regions": {
+                  "items": {
+                    "$ref": "#/$defs/FacetBucket"
+                  },
+                  "title": "Regions",
+                  "type": "array"
+                },
+                "tags": {
+                  "items": {
+                    "$ref": "#/$defs/FacetBucket"
+                  },
+                  "title": "Tags",
+                  "type": "array"
+                }
+              },
+              "required": [
+                "issuers",
+                "categories",
+                "regions",
+                "tags"
+              ],
+              "title": "Facets",
+              "type": "object"
+            },
+            "Highlight": {
+              "additionalProperties": false,
+              "properties": {
+                "field": {
+                  "enum": [
+                    "title",
+                    "summary",
+                    "content"
+                  ],
+                  "title": "Field",
+                  "type": "string"
+                },
+                "text": {
+                  "title": "Text",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "field",
+                "text"
+              ],
+              "title": "Highlight",
+              "type": "object"
+            },
+            "SearchHit": {
+              "additionalProperties": false,
+              "properties": {
+                "doc_id": {
+                  "title": "Doc Id",
+                  "type": "string"
+                },
+                "title": {
+                  "title": "Title",
+                  "type": "string"
+                },
+                "doc_number": {
+                  "title": "Doc Number",
+                  "type": "string"
+                },
+                "issuer": {
+                  "title": "Issuer",
+                  "type": "string"
+                },
+                "region": {
+                  "title": "Region",
+                  "type": "string"
+                },
+                "category": {
+                  "title": "Category",
+                  "type": "string"
+                },
+                "tags": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Tags",
+                  "type": "array"
+                },
+                "issue_date": {
+                  "anyOf": [
+                    {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Issue Date"
+                },
+                "effective_date": {
+                  "anyOf": [
+                    {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Effective Date"
+                },
+                "summary": {
+                  "title": "Summary",
+                  "type": "string"
+                },
+                "source_url": {
+                  "title": "Source Url",
+                  "type": "string"
+                },
+                "status": {
+                  "title": "Status",
+                  "type": "string"
+                },
+                "score": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Score"
+                },
+                "highlights": {
+                  "items": {
+                    "$ref": "#/$defs/Highlight"
+                  },
+                  "title": "Highlights",
+                  "type": "array"
+                }
+              },
+              "required": [
+                "doc_id",
+                "title",
+                "doc_number",
+                "issuer",
+                "region",
+                "category",
+                "tags",
+                "issue_date",
+                "effective_date",
+                "summary",
+                "source_url",
+                "status",
+                "score",
+                "highlights"
+              ],
+              "title": "SearchHit",
+              "type": "object"
+            }
+          },
+          "additionalProperties": false,
+          "properties": {
+            "total": {
+              "minimum": 0,
+              "title": "Total",
+              "type": "integer"
+            },
+            "page": {
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            },
+            "size": {
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Size",
+              "type": "integer"
+            },
+            "took_ms": {
+              "minimum": 0,
+              "title": "Took Ms",
+              "type": "integer"
+            },
+            "mode": {
+              "enum": [
+                "smart",
+                "keyword",
+                "exact",
+                "fuzzy"
+              ],
+              "title": "Mode",
+              "type": "string"
+            },
+            "query": {
+              "title": "Query",
+              "type": "string"
+            },
+            "has_more": {
+              "title": "Has More",
+              "type": "boolean"
+            },
+            "next_page": {
+              "anyOf": [
+                {
+                  "minimum": 2,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Next Page"
+            },
+            "hits": {
+              "items": {
+                "$ref": "#/$defs/SearchHit"
+              },
+              "title": "Hits",
+              "type": "array"
+            },
+            "facets": {
+              "$ref": "#/$defs/Facets"
+            }
+          },
+          "required": [
+            "total",
+            "page",
+            "size",
+            "took_ms",
+            "mode",
+            "query",
+            "has_more",
+            "next_page",
+            "hits",
+            "facets"
+          ],
+          "title": "SearchOutput",
+          "type": "object"
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "policy_get_document",
+        "title": "Get policy document",
+        "description": "按文档 ID 获取政策文档详情和完整正文。仅在需要引用原文或核对具体条款时调用；普通检索优先使用 policy_search_documents。",
+        "inputSchema": {
+          "properties": {
+            "doc_id": {
+              "description": "文档唯一标识，例如 doc-000123。",
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Doc Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "doc_id"
+          ],
+          "title": "policy_get_documentArguments",
+          "type": "object"
+        },
+        "outputSchema": {
+          "$defs": {
+            "PolicyDocument": {
+              "additionalProperties": false,
+              "properties": {
+                "doc_id": {
+                  "title": "Doc Id",
+                  "type": "string"
+                },
+                "title": {
+                  "title": "Title",
+                  "type": "string"
+                },
+                "doc_number": {
+                  "title": "Doc Number",
+                  "type": "string"
+                },
+                "issuer": {
+                  "title": "Issuer",
+                  "type": "string"
+                },
+                "region": {
+                  "title": "Region",
+                  "type": "string"
+                },
+                "category": {
+                  "title": "Category",
+                  "type": "string"
+                },
+                "tags": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Tags",
+                  "type": "array"
+                },
+                "issue_date": {
+                  "anyOf": [
+                    {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Issue Date"
+                },
+                "effective_date": {
+                  "anyOf": [
+                    {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Effective Date"
+                },
+                "summary": {
+                  "title": "Summary",
+                  "type": "string"
+                },
+                "source_url": {
+                  "title": "Source Url",
+                  "type": "string"
+                },
+                "status": {
+                  "title": "Status",
+                  "type": "string"
+                },
+                "content": {
+                  "title": "Content",
+                  "type": "string"
+                },
+                "file_hash": {
+                  "title": "File Hash",
+                  "type": "string"
+                },
+                "created_at": {
+                  "anyOf": [
+                    {
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Created At"
+                }
+              },
+              "required": [
+                "doc_id",
+                "title",
+                "doc_number",
+                "issuer",
+                "region",
+                "category",
+                "tags",
+                "issue_date",
+                "effective_date",
+                "summary",
+                "source_url",
+                "status",
+                "content",
+                "file_hash",
+                "created_at"
+              ],
+              "title": "PolicyDocument",
+              "type": "object"
+            }
+          },
+          "additionalProperties": false,
+          "properties": {
+            "document": {
+              "$ref": "#/$defs/PolicyDocument"
+            }
+          },
+          "required": [
+            "document"
+          ],
+          "title": "GetDocumentOutput",
+          "type": "object"
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "policy_get_stats",
+        "title": "Get policy search stats",
+        "description": "获取文档数、OpenSearch 索引数、索引体积、分词器和服务状态，用于判断检索服务是否可用。",
+        "inputSchema": {
+          "properties": {},
+          "title": "policy_get_statsArguments",
+          "type": "object"
+        },
+        "outputSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "documents": {
+              "minimum": 0,
+              "title": "Documents",
+              "type": "integer"
+            },
+            "index_docs": {
+              "minimum": 0,
+              "title": "Index Docs",
+              "type": "integer"
+            },
+            "index_size_bytes": {
+              "minimum": 0,
+              "title": "Index Size Bytes",
+              "type": "integer"
+            },
+            "analyzer": {
+              "title": "Analyzer",
+              "type": "string"
+            },
+            "engine": {
+              "title": "Engine",
+              "type": "string"
+            },
+            "status": {
+              "title": "Status",
+              "type": "string"
+            }
+          },
+          "required": [
+            "documents",
+            "index_docs",
+            "index_size_bytes",
+            "analyzer",
+            "engine",
+            "status"
+          ],
+          "title": "StatsOutput",
+          "type": "object"
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      }
+    ]
+  }
+}

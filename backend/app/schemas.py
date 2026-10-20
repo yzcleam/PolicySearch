@@ -94,3 +94,58 @@ class StatsResponse(BaseModel):
     analyzer: str
     engine: str
     status: str
+
+
+class LoginRequest(BaseModel):
+    username: str = Field(min_length=1, max_length=128)
+    password: str = Field(min_length=1, max_length=256)
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    role: str = "admin"
+
+
+class AdminMe(BaseModel):
+    username: str
+    role: str
+    scopes: list[str]
+    expires_at: int | None = None
+
+
+class VerifyTokenResponse(BaseModel):
+    valid: bool = True
+    subject: str
+    role: str
+    scopes: list[str]
+    token_type: str
+    expires_at: int | None = None
+    jti: str | None = None
+
+
+class ApiTokenCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=128)
+    scopes: list[str] = Field(default_factory=lambda: ["policy:read"], max_length=10)
+    expires_in_days: int = Field(default=90, ge=1, le=3650)
+
+
+class ApiTokenInfo(BaseModel):
+    jti: str
+    name: str
+    scopes: list[str]
+    created_at: datetime | None = None
+    expires_at: datetime | None = None
+    revoked_at: datetime | None = None
+    last_used_at: datetime | None = None
+    active: bool
+
+
+class ApiTokenCreated(BaseModel):
+    token: str
+    token_info: ApiTokenInfo
+
+
+class ApiTokenList(BaseModel):
+    tokens: list[ApiTokenInfo]

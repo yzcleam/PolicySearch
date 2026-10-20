@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PolicySearchDocumentsOutput",
+  "description": "政策文档检索结果。hits 只包含摘要信息；需要完整正文时调用 policy_get_document。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "total",
+    "page",
+    "size",
+    "took_ms",
+    "mode",
+    "query",
+    "has_more",
+    "next_page",
+    "hits",
+    "facets"
+  ],
+  "properties": {
+    "total": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "分页前的命中总数。"
+    },
+    "page": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "当前页码。"
+    },
+    "size": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "description": "当前每页条数。"
+    },
+    "took_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "OpenSearch 查询耗时（毫秒）。"
+    },
+    "mode": {
+      "$ref": "#/$defs/SearchMode"
+    },
+    "query": {
+      "type": "string",
+      "description": "回显的原始查询字符串。"
+    },
+    "has_more": {
+      "type": "boolean",
+      "description": "是否还有下一页；等价于 page * size < total。"
+    },
+    "next_page": {
+      "type": ["integer", "null"],
+      "minimum": 2,
+      "description": "下一页页码；has_more=false 时为 null。"
+    },
+    "hits": {
+      "type": "array",
+      "description": "当前页的文档摘要列表。",
+      "items": { "$ref": "#/$defs/SearchHit" }
+    },
+    "facets": {
+      "$ref": "#/$defs/Facets"
+    }
+  },
+  "$defs": {
+    "SearchMode": {
+      "type": "string",
+      "enum": ["smart", "keyword", "exact", "fuzzy"]
+    },
+    "SearchHit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "doc_id",
+        "title",
+        "doc_number",
+        "issuer",
+        "region",
+        "category",
+        "tags",
+        "issue_date",
+        "effective_date",
+        "summary",
+        "source_url",
+        "status",
+        "score",
+        "highlights"
+      ],
+      "properties": {
+        "doc_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "文档唯一标识，例如 doc-000123。"
+        },
+        "title": {
+          "type": "string",
+          "description": "政策标题。"
+        },
+        "doc_number": {
+          "type": "string",
+          "description": "文号，例如 国办发〔2024〕12号。可能为空字符串。"
+        },
+        "issuer": {
+          "type": "string",
+          "description": "发布机关。可能为空字符串。"
+        },
+        "region": {
+          "type": "string",
+          "description": "适用地区。可能为空字符串。"
+        },
+        "category": {
+          "type": "string",
+          "description": "政策类型。可能为空字符串。"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "主题标签。"
+        },
+        "issue_date": {
+          "type": ["string", "null"],
+          "format": "date",
+          "description": "发布日期，ISO 8601 日期；未知时为 null。"
+        },
+        "effective_date": {
+          "type": ["string", "null"],
+          "format": "date",
+          "description": "生效日期，ISO 8601 日期；未知时为 null。"
+        },
+        "summary": {
+          "type": "string",
+          "description": "文档摘要，可能为空字符串。"
+        },
+        "source_url": {
+          "type": "string",
+          "description": "原文链接；可能为空字符串。"
+        },
+        "status": {
+          "type": "string",
+          "description": "文档状态，例如 active。"
+        },
+        "score": {
+          "type": ["number", "null"],
+          "description": "检索得分；无得分时为 null。"
+        },
+        "highlights": {
+          "type": "array",
+          "description": "高亮片段；text 中使用 <mark>...</mark> 标记命中词。",
+          "items": { "$ref": "#/$defs/Highlight" }
+        }
+      }
+    },
+    "Highlight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field", "text"],
+      "properties": {
+        "field": {
+          "type": "string",
+          "enum": ["title", "summary", "content"],
+          "description": "高亮片段来自哪个字段。"
+        },
+        "text": {
+          "type": "string",
+          "description": "带 <mark> 标记的高亮文本。"
+        }
+      }
+    },
+    "FacetBucket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "count"],
+      "properties": {
+        "value": {
+          "type": "string",
+          "description": "分面值，例如 国务院。"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "该值在结果中的文档数。"
+        }
+      }
+    },
+    "Facets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["issuers", "categories", "regions", "tags"],
+      "properties": {
+        "issuers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/FacetBucket" },
+          "description": "按发布机关聚合。"
+        },
+        "categories": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/FacetBucket" },
+          "description": "按政策类型聚合。"
+        },
+        "regions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/FacetBucket" },
+          "description": "按适用地区聚合。"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/FacetBucket" },
+          "description": "按主题标签聚合。"
+        }
+      }
+    }
+  }
+}

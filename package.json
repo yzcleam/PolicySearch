@@ -11,6 +11,7 @@
   "scripts": {
     "deploy": "node tools/deploy.mjs",
     "start": "node tools/start.mjs",
+    "mcp:http": "node tools/mcp.mjs --http",
     "doctor": "node tools/doctor.mjs",
     "seed": "node tools/seed.mjs",
     "migrate": "node tools/migrate.mjs",

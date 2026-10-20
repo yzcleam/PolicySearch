@@ -69,9 +69,24 @@ async function main() {
   check("IK 插件包", pathExists(IK_ZIP), path.basename(IK_ZIP));
   check("前端入口", pathExists(path.join(ROOT, "frontend", "index.html")), "frontend/index.html");
   check(
+    "MCP 入口",
+    pathExists(path.join(ROOT, "mcp_server", "server.py")),
+    "mcp_server/server.py"
+  );
+  check(
     "环境文件",
     pathExists(ENV_FILE),
     pathExists(ENV_FILE) ? ".env 已存在" : ".env 不存在（运行 npm run deploy 生成）",
+    false
+  );
+  check(
+    "管理员凭据",
+    Boolean(env.ADMIN_PASSWORD_HASH) &&
+      Boolean(env.JWT_SECRET) &&
+      env.JWT_SECRET !== "change-me",
+    Boolean(env.ADMIN_PASSWORD_HASH)
+      ? "已配置"
+      : "未配置，管理员登录不可用；请运行 npm run deploy",
     false
   );
   console.log("");

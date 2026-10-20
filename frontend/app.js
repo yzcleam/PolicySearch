@@ -100,10 +100,13 @@ function showToast(message, kind = "info") {
 }
 
 async function api(path, options = {}) {
-  const response = await fetch(path, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
+  const { auth = false, ...fetchOptions } = options;
+  const headers = {
+    "Content-Type": "application/json",
+    ...(auth ? adminAuthHeaders() : {}),
+    ...(fetchOptions.headers || {}),
+  };
+  const response = await fetch(path, { ...fetchOptions, headers });
   if (!response.ok) {
     let detail = `HTTP ${response.status}`;
     try {
@@ -112,7 +115,9 @@ async function api(path, options = {}) {
     } catch {
       /* keep status text */
     }
-    throw new Error(detail);
+    const error = new Error(detail);
+    error.status = response.status;
+    throw error;
   }
   return response.json();
 }
@@ -484,6 +489,7 @@ async function seedData() {
   try {
     const result = await api("/api/admin/seed", {
       method: "POST",
+      auth: true,
       body: JSON.stringify({ count: 320, reset: true }),
     });
     showToast(result.message);
@@ -502,7 +508,7 @@ async function reindex() {
   button.disabled = true;
   button.textContent = "重建中…";
   try {
-    const result = await api("/api/admin/reindex", { method: "POST" });
+    const result = await api("/api/admin/reindex", { method: "POST", auth: true });
     showToast(result.message);
     await refreshStats();
     await runSearch(true);
@@ -511,6 +517,28 @@ async function reindex() {
   } finally {
     button.disabled = false;
     button.textContent = "重建索引";
+  }
+}
+
+async function clearData() {
+  if (!window.confirm("将清空全部文档与索引，此操作不可撤销。继续吗？")) return;
+  const button = $("#adminClearBtn");
+  if (button) {
+    button.disabled = true;
+    button.textContent = "清空中…";
+  }
+  try {
+    const result = await api("/api/admin/clear", { method: "POST", auth: true });
+    showToast(result.message);
+    await refreshStats();
+    await runSearch(true);
+  } catch (error) {
+    showToast(`清空失败：${error.message}`, "error");
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = "清空数据";
+    }
   }
 }
 
@@ -650,3 +678,216 @@ document.addEventListener("DOMContentLoaded", async () => {
   await refreshStats();
   await runSearch(true);
 });
+
+/* ------------------------------------------------------------------- admin */
+
+const ADMIN_TOKEN_KEY = "policy_admin_token";
+let adminToken = sessionStorage.getItem(ADMIN_TOKEN_KEY) || "";
+
+function adminAuthHeaders() {
+  return adminToken ? { Authorization: `Bearer ${adminToken}` } : {};
+}
+
+function setAdminToken(token) {
+  adminToken = token || "";
+  if (adminToken) sessionStorage.setItem(ADMIN_TOKEN_KEY, adminToken);
+  else sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+  document.body.classList.toggle("admin-authed", Boolean(adminToken));
+}
+
+function showAdminView(authed) {
+  const login = $("#adminLoginView");
+  const panel = $("#adminPanelView");
+  if (!login || !panel) return;
+  login.hidden = authed;
+  panel.hidden = !authed;
+  document.body.classList.toggle("admin-authed", authed);
+}
+
+function formatAdminDate(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("zh-CN");
+}
+
+function openAdmin() {
+  const backdrop = $("#adminBackdrop");
+  if (!backdrop) return;
+  backdrop.hidden = false;
+  if (adminToken) loadAdminSession();
+  else {
+    showAdminView(false);
+    $("#adminUsername")?.focus();
+  }
+}
+
+function closeAdmin() {
+  const backdrop = $("#adminBackdrop");
+  if (backdrop) backdrop.hidden = true;
+}
+
+async function loadAdminSession() {
+  if (!adminToken) {
+    showAdminView(false);
+    return;
+  }
+  try {
+    const me = await api("/api/auth/me", { auth: true });
+    const who = $("#adminWho");
+    if (who) who.textContent = `${me.username} · ${me.role} · 会话有效期至 ${formatAdminDate(new Date(me.expires_at * 1000))}`;
+    showAdminView(true);
+    await loadTokens();
+  } catch {
+    setAdminToken("");
+    showAdminView(false);
+  }
+}
+
+async function adminLogin(event) {
+  event.preventDefault();
+  const errorNode = $("#adminLoginError");
+  if (errorNode) errorNode.textContent = "";
+  try {
+    const result = await api("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        username: $("#adminUsername").value.trim(),
+        password: $("#adminPassword").value,
+      }),
+    });
+    setAdminToken(result.access_token);
+    $("#adminPassword").value = "";
+    await loadAdminSession();
+  } catch (error) {
+    if (errorNode) errorNode.textContent = error.message;
+  }
+}
+
+function adminLogout() {
+  setAdminToken("");
+  showAdminView(false);
+  const created = $("#tokenCreated");
+  if (created) created.hidden = true;
+  const list = $("#tokenList");
+  if (list) list.innerHTML = "";
+}
+
+function renderTokens(tokens) {
+  const list = $("#tokenList");
+  if (!list) return;
+  if (!tokens.length) {
+    list.innerHTML = `<div class="empty-token">还没有 Token。创建一个用于 MCP 客户端或 API 调用。</div>`;
+    return;
+  }
+  list.innerHTML = tokens
+    .map(
+      (token) => `
+        <div class="token-row">
+          <div>
+            <strong>${escapeHtml(token.name)}</strong>
+            <div class="token-meta">
+              ${escapeHtml(token.jti)} · ${escapeHtml((token.scopes || []).join(", ") || "无 scope")}<br />
+              创建 ${formatAdminDate(token.created_at)} · 到期 ${formatAdminDate(token.expires_at)}
+              ${token.last_used_at ? ` · 最近使用 ${formatAdminDate(token.last_used_at)}` : ""}
+              ${token.revoked_at ? ` · 已撤销 ${formatAdminDate(token.revoked_at)}` : ""}
+            </div>
+          </div>
+          <button class="btn ghost" type="button" data-revoke="${escapeHtml(token.jti)}" ${token.active ? "" : "disabled"}>
+            ${token.active ? "撤销" : "已失效"}
+          </button>
+        </div>`
+    )
+    .join("");
+}
+
+async function loadTokens() {
+  try {
+    const result = await api("/api/admin/tokens", { auth: true });
+    renderTokens(result.tokens || []);
+  } catch (error) {
+    if (error.status === 401) adminLogout();
+    else showToast(`读取 Token 失败：${error.message}`, "error");
+  }
+}
+
+async function createToken(event) {
+  event.preventDefault();
+  const name = $("#tokenName").value.trim();
+  const days = Number($("#tokenDays").value);
+  if (!name) return showToast("请填写 Token 名称", "error");
+  if (!Number.isInteger(days) || days < 1 || days > 3650) {
+    return showToast("有效期必须是 1-3650 天", "error");
+  }
+  const scopes = $("#tokenScopeRead").checked ? ["policy:read"] : [];
+  try {
+    const result = await api("/api/admin/tokens", {
+      method: "POST",
+      auth: true,
+      body: JSON.stringify({ name, scopes, expires_in_days: days }),
+    });
+    const created = $("#tokenCreated");
+    const value = $("#tokenValue");
+    if (created) created.hidden = false;
+    if (value) value.textContent = result.token;
+    $("#tokenName").value = "";
+    showToast("Token 已创建，请立即复制保存");
+    await loadTokens();
+  } catch (error) {
+    showToast(`创建失败：${error.message}`, "error");
+  }
+}
+
+async function revokeToken(jti) {
+  if (!jti) return;
+  if (!window.confirm("撤销后该 Token 立即失效，确定继续吗？")) return;
+  try {
+    await api(`/api/admin/tokens/${encodeURIComponent(jti)}`, {
+      method: "DELETE",
+      auth: true,
+    });
+    showToast("Token 已撤销");
+    await loadTokens();
+  } catch (error) {
+    showToast(`撤销失败：${error.message}`, "error");
+  }
+}
+
+async function copyCreatedToken() {
+  const value = $("#tokenValue")?.textContent || "";
+  if (!value) return;
+  try {
+    await navigator.clipboard.writeText(value);
+    showToast("已复制到剪贴板");
+  } catch {
+    showToast("复制失败，请手动选择文本", "error");
+  }
+}
+
+function bindAdmin() {
+  $("#adminBtn")?.addEventListener("click", openAdmin);
+  $("#adminClose")?.addEventListener("click", closeAdmin);
+  $("#adminBackdrop")?.addEventListener("click", (event) => {
+    if (event.target.id === "adminBackdrop") closeAdmin();
+  });
+  $("#adminLoginForm")?.addEventListener("submit", adminLogin);
+  $("#adminLogout")?.addEventListener("click", adminLogout);
+  $("#tokenForm")?.addEventListener("submit", createToken);
+  $("#refreshTokens")?.addEventListener("click", loadTokens);
+  $("#copyToken")?.addEventListener("click", copyCreatedToken);
+  $("#tokenList")?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-revoke]");
+    if (button) revokeToken(button.dataset.revoke);
+  });
+  $("#adminSeedBtn")?.addEventListener("click", seedData);
+  $("#adminReindexBtn")?.addEventListener("click", reindex);
+  $("#adminClearBtn")?.addEventListener("click", clearData);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeAdmin();
+  });
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  bindAdmin();
+  if (adminToken) await loadAdminSession();
+});
+

@@ -10,7 +10,7 @@ from . import models  # noqa: F401  (register ORM metadata)
 from .config import BASE_DIR, get_settings
 from .database import engine
 from .migrations import run_migrations
-from .routers import admin, documents, search
+from .routers import admin, auth, documents, search
 from .services.index_service import index_service
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -44,6 +44,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
+app.include_router(auth.tokens_router)
 app.include_router(search.router)
 app.include_router(documents.router)
 app.include_router(admin.router)

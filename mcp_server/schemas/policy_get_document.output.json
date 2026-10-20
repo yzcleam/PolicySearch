@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PolicyGetDocumentOutput",
+  "description": "政策文档详情，包含完整正文。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["document"],
+  "properties": {
+    "document": { "$ref": "#/$defs/PolicyDocument" }
+  },
+  "$defs": {
+    "PolicyDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "doc_id",
+        "title",
+        "doc_number",
+        "issuer",
+        "region",
+        "category",
+        "tags",
+        "issue_date",
+        "effective_date",
+        "summary",
+        "source_url",
+        "status",
+        "content",
+        "file_hash",
+        "created_at"
+      ],
+      "properties": {
+        "doc_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "文档唯一标识。"
+        },
+        "title": {
+          "type": "string",
+          "description": "政策标题。"
+        },
+        "doc_number": {
+          "type": "string",
+          "description": "文号；可能为空字符串。"
+        },
+        "issuer": {
+          "type": "string",
+          "description": "发布机关；可能为空字符串。"
+        },
+        "region": {
+          "type": "string",
+          "description": "适用地区；可能为空字符串。"
+        },
+        "category": {
+          "type": "string",
+          "description": "政策类型；可能为空字符串。"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "主题标签。"
+        },
+        "issue_date": {
+          "type": ["string", "null"],
+          "format": "date",
+          "description": "发布日期；未知时为 null。"
+        },
+        "effective_date": {
+          "type": ["string", "null"],
+          "format": "date",
+          "description": "生效日期；未知时为 null。"
+        },
+        "summary": {
+          "type": "string",
+          "description": "文档摘要；可能为空字符串。"
+        },
+        "source_url": {
+          "type": "string",
+          "description": "原文链接；可能为空字符串。"
+        },
+        "status": {
+          "type": "string",
+          "description": "文档状态，例如 active。"
+        },
+        "content": {
+          "type": "string",
+          "description": "政策正文全文。"
+        },
+        "file_hash": {
+          "type": "string",
+          "description": "文件内容哈希；可能为空字符串。"
+        },
+        "created_at": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "入库时间；未知时为 null。"
+        }
+      }
+    }
+  }
+}

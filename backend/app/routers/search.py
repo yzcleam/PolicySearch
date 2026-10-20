@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from ..auth import require_api_access
 from ..schemas import SearchRequest, SearchResponse
 from ..services import search_service
 
-router = APIRouter(prefix="/api", tags=["search"])
+router = APIRouter(prefix="/api", tags=["search"], dependencies=[Depends(require_api_access)])
 
 
 @router.post("/search", response_model=SearchResponse)

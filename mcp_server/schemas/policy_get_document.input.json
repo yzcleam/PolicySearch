@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PolicyGetDocumentInput",
+  "description": "按文档 ID 获取政策原文。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["doc_id"],
+  "properties": {
+    "doc_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "文档唯一标识，例如 doc-000123。"
+    }
+  }
+}

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEST="/mnt/e/PolicySearcher/deploy/opensearch"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEST="$(cd "$SCRIPT_DIR/../.." && pwd)/deploy/opensearch"
 mkdir -p "$DEST"
 cd "$DEST"
 

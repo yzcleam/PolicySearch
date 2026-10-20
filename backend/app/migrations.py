@@ -19,11 +19,34 @@ from .database import Base
 
 log = logging.getLogger(__name__)
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
+
+
+def _migrate_v2_api_tokens(conn: Connection) -> None:
+    conn.execute(
+        text(
+            """
+            CREATE TABLE IF NOT EXISTS api_tokens (
+                jti VARCHAR(64) PRIMARY KEY,
+                name VARCHAR(128) NOT NULL,
+                scopes JSON NOT NULL DEFAULT '[]'::json,
+                created_at TIMESTAMP NOT NULL DEFAULT now(),
+                expires_at TIMESTAMP NULL,
+                revoked_at TIMESTAMP NULL,
+                last_used_at TIMESTAMP NULL
+            )
+            """
+        )
+    )
+    conn.execute(
+        text(
+            "CREATE INDEX IF NOT EXISTS ix_api_tokens_name ON api_tokens (name)"
+        )
+    )
+
 
 MIGRATIONS: dict[int, Callable[[Connection], None]] = {
-    # Example for a future release:
-    # 2: _migrate_v2_add_document_columns,
+    2: _migrate_v2_api_tokens,
 }
 
 

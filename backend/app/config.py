@@ -21,6 +21,15 @@ class Settings(BaseSettings):
     opensearch_password: str | None = None
     cors_origins: str = "*"
 
+    # Authentication
+    jwt_secret: str = "dev-only-change-me"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 480
+    admin_username: str = "admin"
+    admin_password_hash: str = ""
+    api_token_expire_days: int = 90
+    auth_required: bool = False
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>政策检索台 · PolicySearcher</title>
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/admin.css" />
   </head>
   <body>
     <div class="grain" aria-hidden="true"></div>
@@ -23,10 +24,11 @@
       </div>
 
       <div class="top-actions">
-        <button class="btn ghost" id="reindexBtn" title="按 PostgreSQL 中的文档重建 OpenSearch 索引">
+        <button class="btn ghost admin-only" id="reindexBtn" title="按 PostgreSQL 中的文档重建 OpenSearch 索引">
           重建索引
         </button>
-        <button class="btn solid" id="seedBtn">载入示例数据</button>
+        <button class="btn solid admin-only" id="seedBtn">载入示例数据</button>
+        <button class="btn ghost" id="adminBtn">管理员</button>
       </div>
     </header>
 
@@ -120,6 +122,83 @@
       <button class="drawer-close" id="drawerClose" aria-label="关闭">×</button>
       <div class="drawer-body" id="drawerBody"></div>
     </aside>
+
+    <div class="admin-backdrop" id="adminBackdrop" hidden>
+      <section class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
+        <button class="modal-close" id="adminClose" aria-label="关闭">×</button>
+
+        <div id="adminLoginView">
+          <div class="admin-kicker">POLICYSEARCHER · ADMIN</div>
+          <h2 id="adminTitle">管理员登录</h2>
+          <p class="admin-lead">登录后可创建和撤销 MCP / API 使用的 Bearer Token，并维护示例数据与索引。</p>
+          <form id="adminLoginForm" class="admin-form">
+            <label>
+              <span>用户名</span>
+              <input id="adminUsername" name="username" autocomplete="username" required />
+            </label>
+            <label>
+              <span>密码</span>
+              <input id="adminPassword" name="password" type="password" autocomplete="current-password" required />
+            </label>
+            <p class="form-error" id="adminLoginError" role="alert"></p>
+            <button class="btn solid wide" type="submit">登录</button>
+          </form>
+        </div>
+
+        <div id="adminPanelView" hidden>
+          <div class="admin-panel-head">
+            <div>
+              <div class="admin-kicker">POLICYSEARCHER · ADMIN</div>
+              <h2>Bearer Token 管理</h2>
+              <p class="admin-lead" id="adminWho"></p>
+            </div>
+            <button class="btn ghost" id="adminLogout" type="button">退出</button>
+          </div>
+
+          <form id="tokenForm" class="admin-form token-form">
+            <div class="token-form-grid">
+              <label>
+                <span>Token 名称</span>
+                <input id="tokenName" name="name" placeholder="例如：mcp-laptop" maxlength="128" required />
+              </label>
+              <label>
+                <span>有效期（天）</span>
+                <input id="tokenDays" name="days" type="number" min="1" max="3650" value="90" required />
+              </label>
+            </div>
+            <label class="scope-choice">
+              <input id="tokenScopeRead" type="checkbox" checked />
+              <span><code>policy:read</code> 检索、文档详情、状态查询</span>
+            </label>
+            <button class="btn solid" type="submit">创建 Token</button>
+          </form>
+
+          <div class="token-created" id="tokenCreated" hidden>
+            <strong>Token 只显示这一次</strong>
+            <p>复制后保存到 MCP 客户端配置或 <code>POLICY_API_TOKEN</code>。</p>
+            <div class="token-secret-row">
+              <code id="tokenValue"></code>
+              <button class="btn ghost" id="copyToken" type="button">复制</button>
+            </div>
+          </div>
+
+          <div class="token-list-head">
+            <h3>已有 Token</h3>
+            <button class="link" id="refreshTokens" type="button">刷新</button>
+          </div>
+          <div class="token-list" id="tokenList"></div>
+
+          <div class="admin-maintenance">
+            <h3>数据维护</h3>
+            <div class="maintenance-actions">
+              <button class="btn ghost" id="adminSeedBtn" type="button">导入示例</button>
+              <button class="btn ghost" id="adminReindexBtn" type="button">重建索引</button>
+              <button class="btn danger" id="adminClearBtn" type="button">清空数据</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
 
     <div class="toast" id="toast" role="status"></div>
 

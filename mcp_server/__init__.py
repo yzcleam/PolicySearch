@@ -1,0 +1,1 @@
+"""PolicySearcher MCP server package."""

@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from ..auth import require_api_access
 from ..schemas import DocumentOut
 from ..services import catalog
 
-router = APIRouter(prefix="/api", tags=["documents"])
+router = APIRouter(prefix="/api", tags=["documents"], dependencies=[Depends(require_api_access)])
 
 
 @router.get("/documents/{doc_id}", response_model=DocumentOut)

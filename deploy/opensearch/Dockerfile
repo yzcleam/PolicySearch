@@ -1,4 +1,4 @@
-ARG OPENSEARCH_BASE_IMAGE=m.daocloud.io/docker.io/opensearchproject/opensearch:2.19.3
+ARG OPENSEARCH_BASE_IMAGE=opensearchproject/opensearch:2.19.3
 FROM ${OPENSEARCH_BASE_IMAGE}
 
 COPY --chown=1000:1000 opensearch-analysis-ik-2.19.3.zip /tmp/opensearch-analysis-ik.zip

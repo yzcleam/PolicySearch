@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from ..auth import require_admin, require_api_access
 from ..models import Document
 from ..schemas import AdminResult, SeedRequest, StatsResponse
 from ..services import catalog
@@ -9,7 +10,11 @@ from ..services.sample_data import generate_documents
 router = APIRouter(prefix="/api", tags=["admin"])
 
 
-@router.get("/stats", response_model=StatsResponse)
+@router.get(
+    "/stats",
+    response_model=StatsResponse,
+    dependencies=[Depends(require_api_access)],
+)
 def stats() -> StatsResponse:
     pg = catalog.stats()
     os_stats = index_service.stats()
@@ -24,7 +29,7 @@ def stats() -> StatsResponse:
     )
 
 
-@router.post("/admin/seed", response_model=AdminResult)
+@router.post("/admin/seed", response_model=AdminResult, dependencies=[Depends(require_admin)])
 def seed(req: SeedRequest) -> AdminResult:
     try:
         if req.reset:
@@ -47,7 +52,7 @@ def seed(req: SeedRequest) -> AdminResult:
     )
 
 
-@router.post("/admin/reindex", response_model=AdminResult)
+@router.post("/admin/reindex", response_model=AdminResult, dependencies=[Depends(require_admin)])
 def reindex() -> AdminResult:
     index_service.ensure_index(force=True)
     sources = catalog.all_sources()
@@ -60,7 +65,7 @@ def reindex() -> AdminResult:
     )
 
 
-@router.post("/admin/clear", response_model=AdminResult)
+@router.post("/admin/clear", response_model=AdminResult, dependencies=[Depends(require_admin)])
 def clear() -> AdminResult:
     catalog.clear_all()
     index_service.delete_all()

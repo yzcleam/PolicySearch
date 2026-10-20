@@ -162,7 +162,7 @@ export function writeEnv(values, file = ENV_FILE) {
   for (const [key, value] of Object.entries(values)) {
     if (value === undefined || value === null) continue;
     let text = String(value);
-    if (/[\s#"'\\]/.test(text)) {
+    if (/[\s#"'$\\]/.test(text)) {
       text = `"${text.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
     }
     lines.push(`${key}=${text}`);
@@ -278,7 +278,7 @@ export function pythonPackagesOk(python) {
     [
       ...args,
       "-c",
-      "import fastapi, sqlalchemy, psycopg2, opensearchpy, pydantic_settings; print('ok')",
+      "import fastapi, sqlalchemy, psycopg2, opensearchpy, pydantic_settings, mcp, httpx; print('ok')",
     ],
     { timeout: 30_000, env: pythonEnv() }
   );
@@ -425,7 +425,7 @@ export function detectDocker(env = {}) {
     if (local) return local;
   }
   if (IS_WIN && (requested === "auto" || requested === "wsl")) {
-    const distro = env.WSL_DISTRO || "Ubuntu-Clean";
+    const distro = env.WSL_DISTRO || "Ubuntu";
     const wsl = tryWslDocker(distro);
     if (wsl) return wsl;
   }
