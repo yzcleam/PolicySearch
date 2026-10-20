@@ -1,0 +1,6 @@
+fastapi>=0.115,<0.116
+uvicorn[standard]>=0.34,<0.35
+sqlalchemy>=2.0,<2.1
+psycopg2-binary>=2.9,<3
+opensearch-py>=2.7,<3
+pydantic-settings>=2.6,<3

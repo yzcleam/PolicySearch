@@ -1,0 +1,130 @@
+# ---------------------------------------------------------------------------
+# Environment / secrets
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+.ssh/
+.pypirc
+.netrc
+.pgpass
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+
+# ---------------------------------------------------------------------------
+# Node
+# ---------------------------------------------------------------------------
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+.venv*/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+*.whl
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.hypothesis/
+__pypackages__/
+pip-wheel-metadata/
+
+# ---------------------------------------------------------------------------
+# Runtime / logs
+# ---------------------------------------------------------------------------
+logs/
+*.log
+*.log.*
+*.pid
+*.pid.lock
+.cache/
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+.deploy-state.json
+
+# ---------------------------------------------------------------------------
+# Test / coverage
+# ---------------------------------------------------------------------------
+.coverage
+.coverage.*
+coverage/
+coverage.xml
+junit*.xml
+htmlcov/
+.nyc_output/
+
+# ---------------------------------------------------------------------------
+# IDE / OS
+# ---------------------------------------------------------------------------
+.idea/
+.vscode/
+.history/
+.fleet/
+.vs/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# ---------------------------------------------------------------------------
+# Local Docker Compose overrides
+# ---------------------------------------------------------------------------
+docker-compose.override.yml
+compose.override.yml
+
+# ---------------------------------------------------------------------------
+# Build output
+# ---------------------------------------------------------------------------
+dist/
+build/
+*.tgz
+
+# ---------------------------------------------------------------------------
+# Local database / Docker bind data
+# (Compose uses named volumes by default; these are for local overrides.)
+# ---------------------------------------------------------------------------
+data/
+pgdata/
+osdata/
+docker-data/
+postgres-data/
+opensearch-data/
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.sql.gz
+*.vhdx
+*.vhd

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>政策检索台 · PolicySearcher</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <div class="brand">
+        <div class="seal">政</div>
+        <div class="brand-copy">
+          <div class="brand-name">PolicySearcher</div>
+          <div class="brand-sub">政策文本检索台</div>
+        </div>
+      </div>
+
+      <div class="stats" id="stats">
+        <span class="stat skeleton-text">加载中…</span>
+      </div>
+
+      <div class="top-actions">
+        <button class="btn ghost" id="reindexBtn" title="按 PostgreSQL 中的文档重建 OpenSearch 索引">
+          重建索引
+        </button>
+        <button class="btn solid" id="seedBtn">载入示例数据</button>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section class="hero">
+        <div class="hero-copy">
+          <div class="eyebrow">POSTGRESQL · OPENSEARCH · IK ANALYZER</div>
+          <h1>在政策文本里，<br /><em>精确</em>找到那一句。</h1>
+          <p>
+            字段过滤、正文精确短语、模糊容错与相关度融合。每条结果都可回溯到原文、文号与发布机关。
+          </p>
+        </div>
+
+        <form class="searchbox" id="searchForm" autocomplete="off">
+          <div class="search-input-wrap">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7"></circle>
+              <path d="m20 20-4.35-4.35"></path>
+            </svg>
+            <input
+              id="q"
+              name="q"
+              type="search"
+              placeholder="输入关键词、文号或条款短语，例如：增值税留抵退税"
+              aria-label="检索政策文本"
+            />
+            <kbd>/</kbd>
+          </div>
+          <button class="search-btn" type="submit">
+            检索
+            <span class="arrow" aria-hidden="true">→</span>
+          </button>
+        </form>
+
+        <div class="mode-row">
+          <div class="modes" id="modes" role="tablist" aria-label="检索模式">
+            <button class="mode active" data-mode="smart" role="tab">智能融合</button>
+            <button class="mode" data-mode="keyword" role="tab">关键词</button>
+            <button class="mode" data-mode="exact" role="tab">正文精确</button>
+            <button class="mode" data-mode="fuzzy" role="tab">模糊容错</button>
+          </div>
+          <div class="mode-hint" id="modeHint">短语命中 + 分词相关度 + 编辑距离容错</div>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <aside class="filters" id="filters">
+          <div class="filter-head">
+            <span>字段筛选</span>
+            <button class="link" id="clearFilters">清空</button>
+          </div>
+          <div id="facetGroups" class="facet-groups">
+            <div class="filter-placeholder">检索后显示可筛选字段</div>
+          </div>
+
+          <div class="date-block">
+            <div class="filter-head small"><span>发布日期</span></div>
+            <label class="date-field">
+              <span>从</span>
+              <input type="date" id="dateFrom" />
+            </label>
+            <label class="date-field">
+              <span>至</span>
+              <input type="date" id="dateTo" />
+            </label>
+          </div>
+        </aside>
+
+        <section class="results-panel">
+          <div class="results-bar">
+            <div class="result-summary" id="resultSummary">准备检索</div>
+            <div class="result-tools">
+              <label class="sort-label" for="sort">排序</label>
+              <select id="sort">
+                <option value="relevance">相关度</option>
+                <option value="date_desc">日期：新 → 旧</option>
+                <option value="date_asc">日期：旧 → 新</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="results" class="results"></div>
+          <div id="pagination" class="pagination"></div>
+        </section>
+      </section>
+    </main>
+
+    <div class="overlay" id="overlay"></div>
+    <aside class="drawer" id="drawer" aria-hidden="true">
+      <button class="drawer-close" id="drawerClose" aria-label="关闭">×</button>
+      <div class="drawer-body" id="drawerBody"></div>
+    </aside>
+
+    <div class="toast" id="toast" role="status"></div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

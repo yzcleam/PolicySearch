@@ -1,0 +1,32 @@
+{
+  "name": "policy-searcher",
+  "version": "0.2.0",
+  "private": true,
+  "description": "PostgreSQL + OpenSearch/IK policy document retrieval demo with a zero-build web UI",
+  "type": "module",
+  "engines": {
+    "node": ">=20",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "deploy": "node tools/deploy.mjs",
+    "start": "node tools/start.mjs",
+    "doctor": "node tools/doctor.mjs",
+    "seed": "node tools/seed.mjs",
+    "migrate": "node tools/migrate.mjs",
+    "infra:up": "node tools/infra.mjs up",
+    "infra:down": "node tools/infra.mjs down",
+    "infra:status": "node tools/infra.mjs status",
+    "infra:logs": "node tools/infra.mjs logs",
+    "infra:restart": "node tools/infra.mjs restart",
+    "infra:pull": "node tools/infra.mjs pull"
+  },
+  "keywords": [
+    "policy",
+    "search",
+    "opensearch",
+    "postgresql",
+    "ik-analyzer"
+  ],
+  "license": "MIT"
+}

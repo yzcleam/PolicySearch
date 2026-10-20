@@ -1,0 +1,62 @@
+name: policysearcher
+
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:-m.daocloud.io/docker.io/library/postgres:16-alpine}
+    container_name: ${POSTGRES_CONTAINER:-policy-postgres}
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-policy}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-policy}
+      POSTGRES_DB: ${POSTGRES_DB:-policy_search}
+      TZ: ${TZ:-Asia/Shanghai}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-policy} -d ${POSTGRES_DB:-policy_search}",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  opensearch:
+    build:
+      context: ./deploy/opensearch
+      args:
+        OPENSEARCH_BASE_IMAGE: ${OPENSEARCH_BASE_IMAGE:-m.daocloud.io/docker.io/opensearchproject/opensearch:2.19.3}
+    image: ${OPENSEARCH_IMAGE:-policysearcher/opensearch-ik:2.19.3}
+    container_name: ${OPENSEARCH_CONTAINER:-policy-opensearch}
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - DISABLE_SECURITY_PLUGIN=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+      - OPENSEARCH_JAVA_OPTS=${OPENSEARCH_JAVA_OPTS:--Xms1g -Xmx1g}
+      - bootstrap.memory_lock=false
+      - TZ=${TZ:-Asia/Shanghai}
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "${OPENSEARCH_PORT:-9200}:9200"
+    volumes:
+      - osdata:/usr/share/opensearch/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s http://localhost:9200/_cluster/health | grep -qE '\"status\":\"(green|yellow)\"'",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 40
+
+volumes:
+  pgdata:
+  osdata:
