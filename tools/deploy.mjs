@@ -48,13 +48,14 @@ const DEFAULTS = {
   POSTGRES_USER: "policy",
   POSTGRES_PASSWORD: "",
   POSTGRES_DB: "policy_search",
-  POSTGRES_IMAGE: "postgres:16-alpine",
+  DOCKER_MIRROR: "m.daocloud.io/docker.io",
+  POSTGRES_IMAGE: "m.daocloud.io/docker.io/library/postgres:16-alpine",
   POSTGRES_CONTAINER: "policy-postgres",
   OPENSEARCH_HOST: "127.0.0.1",
   OPENSEARCH_PORT: "9200",
   OPENSEARCH_INDEX: "policy_documents",
   OPENSEARCH_IMAGE: "policysearcher/opensearch-ik:2.19.3",
-  OPENSEARCH_BASE_IMAGE: "opensearchproject/opensearch:2.19.3",
+  OPENSEARCH_BASE_IMAGE: "m.daocloud.io/docker.io/opensearchproject/opensearch:2.19.3",
   OPENSEARCH_JAVA_OPTS: "-Xms1g -Xmx1g",
   OPENSEARCH_CONTAINER: "policy-opensearch",
   SEED_COUNT: "320",
@@ -100,6 +101,28 @@ function buildDatabaseUrl(config) {
   return `postgresql+psycopg2://${user}:${password}@${config.POSTGRES_HOST}:${config.POSTGRES_PORT}/${database}`;
 }
 
+function applyDockerMirror(config) {
+  const mirror = String(config.DOCKER_MIRROR || "").replace(/\/+$/, "");
+  if (!mirror) return;
+
+  const officialPostgres = new Set([
+    "postgres:16-alpine",
+    "library/postgres:16-alpine",
+    "docker.io/library/postgres:16-alpine",
+  ]);
+  const officialOpenSearch = new Set([
+    "opensearchproject/opensearch:2.19.3",
+    "docker.io/opensearchproject/opensearch:2.19.3",
+  ]);
+
+  if (officialPostgres.has(config.POSTGRES_IMAGE)) {
+    config.POSTGRES_IMAGE = `${mirror}/library/postgres:16-alpine`;
+  }
+  if (officialOpenSearch.has(config.OPENSEARCH_BASE_IMAGE)) {
+    config.OPENSEARCH_BASE_IMAGE = `${mirror}/opensearchproject/opensearch:2.19.3`;
+  }
+}
+
 function hashAdminPassword(password) {
   const iterations = 310_000;
   const salt = crypto.randomBytes(16);
@@ -117,6 +140,7 @@ function buildValues(config, docker) {
     POSTGRES_USER: config.POSTGRES_USER,
     POSTGRES_PASSWORD: config.POSTGRES_PASSWORD,
     POSTGRES_DB: config.POSTGRES_DB,
+    DOCKER_MIRROR: config.DOCKER_MIRROR,
     POSTGRES_IMAGE: config.POSTGRES_IMAGE,
     POSTGRES_CONTAINER: config.POSTGRES_CONTAINER,
     DATABASE_URL: buildDatabaseUrl(config),
@@ -342,6 +366,7 @@ function printConfig(values) {
   info(`PostgreSQL: ${values.POSTGRES_USER}@${values.POSTGRES_HOST}:${values.POSTGRES_PORT}/${values.POSTGRES_DB}`);
   info(`PostgreSQL 密码: ${maskSecret(values.POSTGRES_PASSWORD)}`);
   info(`OpenSearch: ${values.OPENSEARCH_URL} · 索引 ${values.OPENSEARCH_INDEX}`);
+  info(`Docker 镜像前缀: ${values.DOCKER_MIRROR || "官方"}`);
   info(`Python 包镜像: ${values.PIP_INDEX_URL}`);
   info(`示例数据: ${values.SEED_ON_DEPLOY === "true" ? `${values.SEED_COUNT} 条` : "不导入"}`);
   if (/[\s$`"\\]/.test(values.POSTGRES_PASSWORD)) {
@@ -402,6 +427,7 @@ async function main() {
 
   const initial = readEnv(ENV_FILE);
   const config = configFrom(initial);
+  applyDockerMirror(config);
   if (args.port) config.APP_PORT = String(args.port);
 
   const docker = detectDocker(config);
@@ -461,7 +487,18 @@ async function main() {
   step(4, TOTAL_STEPS, "启动 PostgreSQL / OpenSearch 容器");
   const composeArgs = ["up", "-d"];
   if (!args["skip-build"]) composeArgs.push("--build");
-  await composeChecked(docker, composeArgs, { env: values });
+  try {
+    await composeChecked(docker, composeArgs, { env: values });
+  } catch (error) {
+    throw new Error(
+      `${error.message}\n\n` +
+        "Docker 镜像拉取失败。若服务器无法访问 Docker Hub，请执行：\n" +
+        "  1) 在 .env 设置 DOCKER_MIRROR=m.daocloud.io/docker.io\n" +
+        "  2) 或直接设置 POSTGRES_IMAGE / OPENSEARCH_BASE_IMAGE 为可访问的镜像地址\n" +
+        `\n当前 POSTGRES_IMAGE=${values.POSTGRES_IMAGE}\n` +
+        `当前 OPENSEARCH_BASE_IMAGE=${values.OPENSEARCH_BASE_IMAGE}`
+    );
+  }
   ok("容器已启动，等待健康检查…");
 
   await waitForTcp(configured.POSTGRES_HOST, Number(configured.POSTGRES_PORT), {

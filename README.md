@@ -122,6 +122,14 @@ Python 依赖默认通过 `PIP_INDEX_URL` 使用清华 PyPI 镜像；服务器�
 PIP_INDEX_URL=https://pypi.org/simple
 ```
 
+Docker 镜像默认使用 `DOCKER_MIRROR=m.daocloud.io/docker.io`。如果服务器无法访问 Docker Hub 或该镜像，可改为内网仓库，或显式覆盖：
+
+```ini
+DOCKER_MIRROR=
+POSTGRES_IMAGE=your-registry/postgres:16-alpine
+OPENSEARCH_BASE_IMAGE=your-registry/opensearchproject/opensearch:2.19.3
+```
+
 非交互部署：
 
 ```bash
@@ -245,12 +253,13 @@ WSL_DISTRO=Ubuntu
 | `POSTGRES_PASSWORD` | 部署时生成/保留 | 数据库密码 |
 | `POSTGRES_DB` | `policy_search` | 数据库名 |
 | `DATABASE_URL` | 自动生成 | SQLAlchemy 连接串 |
-| `POSTGRES_IMAGE` | `postgres:16-alpine` | PostgreSQL 镜像 |
+| `DOCKER_MIRROR` | `m.daocloud.io/docker.io` | Docker 镜像前缀；置空则用官方源 |
+| `POSTGRES_IMAGE` | `m.daocloud.io/.../postgres:16-alpine` | PostgreSQL 镜像 |
 | `OPENSEARCH_URL` | `http://127.0.0.1:9200` | OpenSearch 地址 |
 | `OPENSEARCH_INDEX` | `policy_documents` | 索引名 |
 | `OPENSEARCH_JAVA_OPTS` | `-Xms1g -Xmx1g` | 单节点堆内存 |
 | `OPENSEARCH_IMAGE` | `policysearcher/opensearch-ik:2.19.3` | IK 镜像 |
-| `OPENSEARCH_BASE_IMAGE` | `opensearchproject/opensearch:2.19.3` | 构建基础镜像 |
+| `OPENSEARCH_BASE_IMAGE` | `m.daocloud.io/.../opensearch:2.19.3` | 构建基础镜像 |
 | `SEED_COUNT` | `320` | 示例数据条数 |
 | `SEED_ON_DEPLOY` | `true` | 部署时是否导入 |
 | `PIP_INDEX_URL` | `https://pypi.tuna.tsinghua.edu.cn/simple` | 部署时 pip 使用的 PyPI 镜像 |
@@ -277,7 +286,7 @@ WSL_DISTRO=Ubuntu
 注意：
 
 - 修改 PostgreSQL 密码不会自动修改已有数据卷中的角色密码。已有数据卷时应保留原密码，或先备份并执行 `ALTER ROLE`；删除数据卷会丢失数据。
-- 默认镜像可通过 `POSTGRES_IMAGE`、`OPENSEARCH_BASE_IMAGE` 覆盖。
+- 默认镜像通过 `DOCKER_MIRROR` 走 `m.daocloud.io/docker.io` 前缀；服务器无法访问该镜像时，可设置 `DOCKER_MIRROR=` 并显式指定 `POSTGRES_IMAGE`、`OPENSEARCH_BASE_IMAGE`。
 - 服务器部署建议将 `APP_HOST` 设为 `0.0.0.0`，并配置防火墙或反向代理。
 
 ## API
