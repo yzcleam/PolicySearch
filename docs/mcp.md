@@ -47,7 +47,7 @@ npm run doctor
 {
   "mcpServers": {
     "policysearcher": {
-      "command": "<project>/.venv/bin/python",
+      "command": "<project>/.venv-linux/bin/python",
       "args": ["-m", "mcp_server.server"],
       "cwd": "<project>",
       "env": {
@@ -151,8 +151,10 @@ http://127.0.0.1:8765/mcp
   "query": "增值税留抵退税",
   "mode": "smart",
   "filters": {
-    "categories": ["税收优惠"],
-    "date_from": "2020-01-01"
+    "provinces": ["北京市"],
+    "category_1": ["税收优惠"],
+    "time_statuses": ["现行有效"],
+    "pub_date_from": "2020-01-01"
   },
   "page": 1,
   "size": 5

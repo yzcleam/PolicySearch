@@ -1,94 +1,289 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "PolicySearchDocumentsInput",
-  "description": "政策文档检索工具的输入。query 为空时执行过滤/浏览查询，并按发布日期倒序返回。",
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "query": {
-      "type": "string",
-      "default": "",
-      "description": "自然语言或关键词查询。空字符串表示不限制关键词，仅按 filters 浏览。示例：增值税留抵退税。"
-    },
-    "mode": {
-      "type": "string",
-      "enum": ["smart", "keyword", "exact", "fuzzy"],
-      "default": "smart",
-      "description": "检索模式。smart：短语+分词相关度+容错；keyword：BM25；exact：短语匹配；fuzzy：编辑距离容错。"
-    },
-    "filters": {
-      "type": "object",
+  "$defs": {
+    "SearchFilters": {
       "additionalProperties": false,
-      "default": {},
-      "description": "精确匹配过滤条件。多个字段之间为 AND 关系。",
       "properties": {
         "issuers": {
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 },
+          "description": "发布机关，例如：国务院、国家税务总局。",
+          "items": {
+            "type": "string"
+          },
           "maxItems": 20,
-          "default": [],
-          "description": "发布机关，例如：国务院、国家税务总局。"
+          "title": "Issuers",
+          "type": "array"
         },
         "categories": {
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 },
+          "description": "政策类型，例如：税收优惠、科技创新。",
+          "items": {
+            "type": "string"
+          },
           "maxItems": 20,
-          "default": [],
-          "description": "政策类型，例如：税收优惠、科技创新。"
+          "title": "Categories",
+          "type": "array"
         },
         "regions": {
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 },
+          "description": "适用地区，例如：全国、广东省、深圳市。",
+          "items": {
+            "type": "string"
+          },
           "maxItems": 20,
-          "default": [],
-          "description": "适用地区，例如：全国、广东省、深圳市。"
+          "title": "Regions",
+          "type": "array"
         },
         "tags": {
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 },
+          "description": "主题标签，例如：减税降费、专精特新。",
+          "items": {
+            "type": "string"
+          },
           "maxItems": 20,
-          "default": [],
-          "description": "主题标签，例如：减税降费、专精特新。"
+          "title": "Tags",
+          "type": "array"
         },
         "date_from": {
-          "type": ["string", "null"],
-          "format": "date",
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
           "default": null,
-          "description": "发布日期下界，ISO 8601 日期，例如 2020-01-01。"
+          "description": "发布日期下界，ISO 8601 日期，例如 2020-01-01。",
+          "title": "Date From"
         },
         "date_to": {
-          "type": ["string", "null"],
-          "format": "date",
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
           "default": null,
-          "description": "发布日期上界，ISO 8601 日期，例如 2024-12-31。"
+          "description": "发布日期上界，ISO 8601 日期，例如 2024-12-31。",
+          "title": "Date To"
+        },
+        "law_db_names": {
+          "description": "法规库名称，例如 lar。",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Law Db Names",
+          "type": "array"
+        },
+        "provinces": {
+          "description": "省级地区，例如 北京市、广东省。",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Provinces",
+          "type": "array"
+        },
+        "cities": {
+          "description": "城市，例如 深圳市。",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Cities",
+          "type": "array"
+        },
+        "counties": {
+          "description": "区县。",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Counties",
+          "type": "array"
+        },
+        "category_1": {
+          "description": "一级分类，例如 科技创新。",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Category 1",
+          "type": "array"
+        },
+        "category_2": {
+          "description": "二级分类，例如 专精特新。",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Category 2",
+          "type": "array"
+        },
+        "law_types": {
+          "description": "法规类型，例如 地方性法规、行政法规。",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Law Types",
+          "type": "array"
+        },
+        "pub_departments": {
+          "description": "发布机关，对应源字段 pub_depart。",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Pub Departments",
+          "type": "array"
+        },
+        "pub_nums": {
+          "description": "文号，对应源字段 pub_num。",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Pub Nums",
+          "type": "array"
+        },
+        "time_statuses": {
+          "description": "时效性，例如 现行有效、已失效。",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Time Statuses",
+          "type": "array"
+        },
+        "pub_date_from": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "发布日期下界，对应源字段 pub_date。",
+          "title": "Pub Date From"
+        },
+        "pub_date_to": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "发布日期上界，对应源字段 pub_date。",
+          "title": "Pub Date To"
+        },
+        "use_date_from": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "实施日期下界，对应源字段 use_date。",
+          "title": "Use Date From"
+        },
+        "use_date_to": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "实施日期上界，对应源字段 use_date。",
+          "title": "Use Date To"
         }
-      }
+      },
+      "title": "SearchFilters",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "query": {
+      "default": "",
+      "description": "自然语言或关键词查询。空字符串表示不限制关键词，仅按 filters 浏览。示例：增值税留抵退税。",
+      "title": "Query",
+      "type": "string"
+    },
+    "mode": {
+      "default": "smart",
+      "description": "检索模式。smart：短语+分词相关度+容错；keyword：BM25；exact：短语匹配；fuzzy：编辑距离容错。",
+      "enum": [
+        "smart",
+        "keyword",
+        "exact",
+        "fuzzy"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "filters": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SearchFilters"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "精确匹配过滤条件；多个字段之间为 AND 关系。"
     },
     "page": {
-      "type": "integer",
-      "minimum": 1,
       "default": 1,
-      "description": "页码，从 1 开始。"
+      "description": "页码，从 1 开始。",
+      "minimum": 1,
+      "title": "Page",
+      "type": "integer"
     },
     "size": {
-      "type": "integer",
-      "minimum": 1,
-      "maximum": 50,
       "default": 10,
-      "description": "每页返回条数，最大 50。MCP 场景建议 3-10 以控制上下文。"
+      "description": "每页返回条数，最大 50；MCP 场景建议 3-10。",
+      "maximum": 50,
+      "minimum": 1,
+      "title": "Size",
+      "type": "integer"
     },
     "sort": {
-      "type": "string",
-      "enum": ["relevance", "date_desc", "date_asc"],
       "default": "relevance",
-      "description": "排序方式：相关度、发布日期倒序、发布日期正序。"
+      "description": "排序方式：相关度、发布日期倒序、发布日期正序。",
+      "enum": [
+        "relevance",
+        "date_desc",
+        "date_asc"
+      ],
+      "title": "Sort",
+      "type": "string"
     },
     "slop": {
-      "type": "integer",
-      "minimum": 0,
-      "maximum": 10,
       "default": 2,
-      "description": "exact/smart 模式下短语允许的词间距。"
+      "description": "exact/smart 模式下短语允许的词间距。",
+      "maximum": 10,
+      "minimum": 0,
+      "title": "Slop",
+      "type": "integer"
     }
-  }
+  },
+  "title": "policy_search_documentsArguments",
+  "type": "object"
 }

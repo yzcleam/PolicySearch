@@ -14,6 +14,7 @@
     "mcp:http": "node tools/mcp.mjs --http",
     "doctor": "node tools/doctor.mjs",
     "seed": "node tools/seed.mjs",
+    "import": "node tools/import.mjs",
     "migrate": "node tools/migrate.mjs",
     "infra:up": "node tools/infra.mjs up",
     "infra:down": "node tools/infra.mjs down",

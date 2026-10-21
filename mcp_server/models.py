@@ -40,6 +40,72 @@ class SearchFilters(BaseModel):
         default=None,
         description="发布日期上界，ISO 8601 日期，例如 2024-12-31。",
     )
+    law_db_names: list[str] = Field(
+        default_factory=list,
+        max_length=20,
+        description="法规库名称，例如 lar。",
+    )
+    provinces: list[str] = Field(
+        default_factory=list,
+        max_length=20,
+        description="省级地区，例如 北京市、广东省。",
+    )
+    cities: list[str] = Field(
+        default_factory=list,
+        max_length=20,
+        description="城市，例如 深圳市。",
+    )
+    counties: list[str] = Field(
+        default_factory=list,
+        max_length=20,
+        description="区县。",
+    )
+    category_1: list[str] = Field(
+        default_factory=list,
+        max_length=20,
+        description="一级分类，例如 科技创新。",
+    )
+    category_2: list[str] = Field(
+        default_factory=list,
+        max_length=20,
+        description="二级分类，例如 专精特新。",
+    )
+    law_types: list[str] = Field(
+        default_factory=list,
+        max_length=20,
+        description="法规类型，例如 地方性法规、行政法规。",
+    )
+    pub_departments: list[str] = Field(
+        default_factory=list,
+        max_length=20,
+        description="发布机关，对应源字段 pub_depart。",
+    )
+    pub_nums: list[str] = Field(
+        default_factory=list,
+        max_length=20,
+        description="文号，对应源字段 pub_num。",
+    )
+    time_statuses: list[str] = Field(
+        default_factory=list,
+        max_length=20,
+        description="时效性，例如 现行有效、已失效。",
+    )
+    pub_date_from: date | None = Field(
+        default=None,
+        description="发布日期下界，对应源字段 pub_date。",
+    )
+    pub_date_to: date | None = Field(
+        default=None,
+        description="发布日期上界，对应源字段 pub_date。",
+    )
+    use_date_from: date | None = Field(
+        default=None,
+        description="实施日期下界，对应源字段 use_date。",
+    )
+    use_date_to: date | None = Field(
+        default=None,
+        description="实施日期上界，对应源字段 use_date。",
+    )
 
 
 class Highlight(BaseModel):
@@ -64,6 +130,20 @@ class SearchHit(BaseModel):
     summary: str
     source_url: str
     status: str
+    law_db_name: str
+    detail_url: str
+    province: str
+    city: str
+    county: str
+    category_1: str
+    category_2: str
+    law_type: str
+    pub_depart: str
+    pub_num: str
+    pub_date: date | None
+    use_date: date | None
+    is_time: str
+    add_time: str
     score: float | None
     highlights: list[Highlight]
 
@@ -82,6 +162,15 @@ class Facets(BaseModel):
     categories: list[FacetBucket]
     regions: list[FacetBucket]
     tags: list[FacetBucket]
+    law_db_names: list[FacetBucket]
+    provinces: list[FacetBucket]
+    cities: list[FacetBucket]
+    counties: list[FacetBucket]
+    category_1: list[FacetBucket]
+    category_2: list[FacetBucket]
+    law_types: list[FacetBucket]
+    pub_departments: list[FacetBucket]
+    time_statuses: list[FacetBucket]
 
 
 class SearchOutput(BaseModel):
@@ -117,6 +206,23 @@ class PolicyDocument(BaseModel):
     content: str
     file_hash: str
     created_at: datetime | None
+    law_db_name: str
+    detail_url: str
+    province: str
+    city: str
+    county: str
+    category_1: str
+    category_2: str
+    law_type: str
+    pub_depart: str
+    pub_num: str
+    pub_date: date | None
+    use_date: date | None
+    is_time: str
+    detail_flag: str
+    detail_html: str
+    detail_md: str
+    add_time: str
 
 
 class GetDocumentOutput(BaseModel):

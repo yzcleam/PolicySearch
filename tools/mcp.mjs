@@ -15,7 +15,7 @@ if (!fs.existsSync(ENV_FILE)) {
 
 const python = venvPythonPath();
 if (!fs.existsSync(python)) {
-  fail("缺少 .venv，请先运行 npm run deploy。");
+  fail("缺少 Python 虚拟环境，请先运行 npm run deploy。");
   process.exit(1);
 }
 

@@ -65,19 +65,28 @@
 ```json
 {
   "filters": {
-    "issuers": ["国务院"],
-    "categories": ["税收优惠"],
-    "regions": ["全国"],
-    "tags": ["减税降费"],
-    "date_from": "2020-01-01",
-    "date_to": "2024-12-31"
+    "law_db_names": ["lar"],
+    "provinces": ["北京市"],
+    "cities": ["北京市"],
+    "counties": [],
+    "category_1": ["科技创新"],
+    "category_2": ["专精特新"],
+    "law_types": ["地方性法规"],
+    "pub_departments": ["北京市人民政府"],
+    "pub_nums": ["京政发〔2024〕1号"],
+    "time_statuses": ["现行有效"],
+    "pub_date_from": "2020-01-01",
+    "pub_date_to": "2024-12-31",
+    "use_date_from": null,
+    "use_date_to": null
   }
 }
 ```
 
-- 四个数组字段为 OR（同一字段内）语义，字段之间为 AND。
-- 日期使用 ISO 8601 `date`，只过滤 `issue_date`。
+- 数组字段为 OR（同一字段内）语义，字段之间为 AND。
+- 日期使用 ISO 8601 `date`；`pub_date` / `use_date` 分别对应源数据发布日期和实施日期。
 - 每个数组最多 20 项，避免生成过大的 OpenSearch terms query。
+- `issuers`、`categories`、`regions`、`tags` 是旧字段别名，仍保留兼容；新客户端应使用 SQL 对齐字段。
 - 数组元素不允许空字符串。
 
 ### 分页与排序
@@ -101,27 +110,40 @@
 | `has_more` | boolean | `page * size < total` |
 | `next_page` | integer/null | 有下一页时为 `page + 1`，否则 `null` |
 | `hits` | array | 文档摘要列表 |
-| `facets` | object | 机关、类型、地区、标签聚合 |
+| `facets` | object | 按 SQL 对齐字段聚合 |
 
 ### `hits` 单项
 
-包含 `doc_id`、`title`、`doc_number`、`issuer`、`region`、`category`、`tags`、`issue_date`、`effective_date`、`summary`、`source_url`、`status`、`score`、`highlights`。
+SQL 对齐字段：
 
-- `issue_date` / `effective_date` 未知时为 `null`。
+`doc_id`、`title`、`law_db_name`、`detail_url`、`province`、`city`、`county`、`category_1`、`category_2`、`law_type`、`pub_depart`、`pub_num`、`pub_date`、`use_date`、`is_time`、`add_time`。
+
+同时保留兼容字段：`doc_number`、`issuer`、`region`、`category`、`tags`、`issue_date`、`effective_date`、`summary`、`source_url`、`status`、`score`、`highlights`。
+
+- `pub_date` / `use_date` / `issue_date` / `effective_date` 未知时为 `null`。
 - `score` 为 `number | null`。
 - `highlights[].text` 保留 `<mark>...</mark>` 标记。
 - `summary` 可能为空字符串，不能假设一定有内容。
 
 ### `facets`
 
-固定包含：
+包含兼容分面和 SQL 对齐分面：
 
 ```json
 {
   "issuers": [{ "value": "国务院", "count": 8 }],
   "categories": [{ "value": "税收优惠", "count": 17 }],
   "regions": [{ "value": "全国", "count": 9 }],
-  "tags": [{ "value": "减税降费", "count": 7 }]
+  "tags": [{ "value": "减税降费", "count": 7 }],
+  "law_db_names": [{ "value": "lar", "count": 8 }],
+  "provinces": [{ "value": "北京市", "count": 4 }],
+  "cities": [{ "value": "北京市", "count": 4 }],
+  "counties": [],
+  "category_1": [{ "value": "科技创新", "count": 5 }],
+  "category_2": [{ "value": "专精特新", "count": 2 }],
+  "law_types": [{ "value": "地方性法规", "count": 6 }],
+  "pub_departments": [{ "value": "北京市人民政府", "count": 4 }],
+  "time_statuses": [{ "value": "现行有效", "count": 8 }]
 }
 ```
 
@@ -140,18 +162,27 @@
 ```json
 {
   "document": {
-    "doc_id": "doc-000123",
+    "doc_id": "pkulaw-1",
     "title": "关于优化增值税留抵退税的意见",
-    "doc_number": "国办发〔2024〕12号",
-    "issuer": "国务院",
-    "region": "全国",
-    "category": "税收优惠",
-    "tags": ["减税降费"],
-    "issue_date": "2024-05-10",
-    "effective_date": null,
+    "law_db_name": "lar",
+    "detail_url": "8ef46f8ae2b7ce1207961d9a013f7286bdfb",
+    "province": "北京市",
+    "city": "北京市",
+    "county": null,
+    "category_1": "税收优惠;营商环境优化",
+    "category_2": "增值税留抵退税",
+    "law_type": "地方性法规",
+    "pub_depart": "北京市人民政府",
+    "pub_num": "京政发〔2024〕1号",
+    "pub_date": "2024-05-10",
+    "use_date": "2024-06-01",
+    "is_time": "现行有效",
+    "add_time": "2024-05-11",
+    "detail_flag": "政策正文...",
+    "detail_html": "<p>政策正文...</p>",
+    "detail_md": "政策正文...",
     "summary": "...",
-    "source_url": "",
-    "status": "active",
+    "tags": ["税收优惠", "营商环境优化"],
     "content": "政策正文全文...",
     "file_hash": "...",
     "created_at": "2024-05-10T12:00:00"
@@ -159,7 +190,7 @@
 }
 ```
 
-`content` 是完整正文，可能很长；工具描述应明确提示“仅在需要引用原文时调用”。
+`content` / `detail_md` 是完整正文，可能很长；工具描述应明确提示“仅在需要引用原文时调用”。
 
 ## 状态工具
 
@@ -215,12 +246,18 @@ Error executing tool policy_get_document: NOT_FOUND: 文档不存在
 | --- | --- |
 | `query` | `query` |
 | `mode` | `mode` |
-| `filters.issuers` | `filters.issuers` |
-| `filters.categories` | `filters.categories` |
-| `filters.regions` | `filters.regions` |
-| `filters.tags` | `filters.tags` |
-| `filters.date_from` | `filters.date_from` |
-| `filters.date_to` | `filters.date_to` |
+| `filters.law_db_names` | `filters.law_db_names` |
+| `filters.provinces` | `filters.provinces` |
+| `filters.cities` | `filters.cities` |
+| `filters.counties` | `filters.counties` |
+| `filters.category_1` | `filters.category_1` |
+| `filters.category_2` | `filters.category_2` |
+| `filters.law_types` | `filters.law_types` |
+| `filters.pub_departments` | `filters.pub_departments` |
+| `filters.pub_nums` | `filters.pub_nums` |
+| `filters.time_statuses` | `filters.time_statuses` |
+| `filters.pub_date_from` / `pub_date_to` | 同名参数 |
+| `filters.use_date_from` / `use_date_to` | 同名参数 |
 | `page` / `size` / `sort` / `slop` | 同名参数 |
 
 服务端补充计算：
@@ -238,4 +275,4 @@ next_page = has_more ? page + 1 : null
 - **调用方式**：MCP 服务调用 FastAPI 的 `/api/*`，不直接复制检索逻辑，保证 Web 与 MCP 行为一致。
 - **超时**：对 API 调用设置 15 秒超时；连接失败返回 `UPSTREAM_UNAVAILABLE`。
 - **只读**：v1 不提供 seed/reindex/clear 工具。
-- **启动**：本地客户端直接启动 `.venv` 中的 Python；HTTP 模式可用 `npm run mcp:http`。
+- **启动**：本地客户端直接启动平台专属虚拟环境中的 Python（Windows `.venv`，Linux/macOS `.venv-linux`）；HTTP 模式可用 `npm run mcp:http`。

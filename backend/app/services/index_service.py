@@ -52,6 +52,29 @@ _MAPPING_TEMPLATE: dict[str, Any] = {
             "source_url": {"type": "keyword", "index": False},
             "file_hash": {"type": "keyword", "index": False},
             "status": {"type": "keyword"},
+            "law_db_name": {"type": "keyword"},
+            "detail_url": {"type": "keyword", "index": False},
+            "province": {"type": "keyword", "ignore_above": 512},
+            "city": {"type": "keyword", "ignore_above": 64},
+            "county": {"type": "keyword", "ignore_above": 64},
+            "category_1": {"type": "keyword", "ignore_above": 1024},
+            "category_2": {"type": "keyword", "ignore_above": 1024},
+            "law_type": {"type": "keyword", "ignore_above": 128},
+            "pub_depart": {"type": "keyword", "ignore_above": 512},
+            "pub_num": {"type": "keyword", "ignore_above": 300},
+            "pub_date": {
+                "type": "date",
+                "format": "strict_date_optional_time||yyyy-MM-dd",
+            },
+            "use_date": {
+                "type": "date",
+                "format": "strict_date_optional_time||yyyy-MM-dd",
+            },
+            "is_time": {"type": "keyword"},
+            "detail_md": {"type": "text", "index": False},
+            "detail_flag": {"type": "text", "index": False},
+            "detail_html": {"type": "text", "index": False},
+            "add_time": {"type": "keyword"},
         },
     },
 }
@@ -213,6 +236,27 @@ def to_source(doc: Any) -> dict[str, Any]:
         "source_url": doc.source_url or "",
         "file_hash": doc.file_hash or "",
         "status": getattr(doc, "status", "active") or "active",
+        "law_db_name": getattr(doc, "law_db_name", "") or "",
+        "detail_url": getattr(doc, "detail_url", "") or "",
+        "province": getattr(doc, "province", "") or "",
+        "city": getattr(doc, "city", "") or "",
+        "county": getattr(doc, "county", "") or "",
+        "category_1": getattr(doc, "category_1", "") or "",
+        "category_2": getattr(doc, "category_2", "") or "",
+        "law_type": getattr(doc, "law_type", "") or "",
+        "pub_depart": getattr(doc, "pub_depart", "") or "",
+        "pub_num": getattr(doc, "pub_num", "") or "",
+        "pub_date": getattr(doc, "pub_date", None).isoformat()
+        if getattr(doc, "pub_date", None)
+        else None,
+        "use_date": getattr(doc, "use_date", None).isoformat()
+        if getattr(doc, "use_date", None)
+        else None,
+        "is_time": getattr(doc, "is_time", "") or "",
+        "detail_md": getattr(doc, "detail_md", "") or "",
+        "detail_flag": getattr(doc, "detail_flag", "") or "",
+        "detail_html": getattr(doc, "detail_html", "") or "",
+        "add_time": getattr(doc, "add_time", "") or "",
     }
 
 

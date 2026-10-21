@@ -96,6 +96,18 @@
               <input type="date" id="dateTo" />
             </label>
           </div>
+
+          <div class="date-block">
+            <div class="filter-head small"><span>实施日期</span></div>
+            <label class="date-field">
+              <span>从</span>
+              <input type="date" id="useDateFrom" />
+            </label>
+            <label class="date-field">
+              <span>至</span>
+              <input type="date" id="useDateTo" />
+            </label>
+          </div>
         </aside>
 
         <section class="results-panel">
@@ -187,6 +199,57 @@
             <button class="link" id="refreshTokens" type="button">刷新</button>
           </div>
           <div class="token-list" id="tokenList"></div>
+
+          <div class="admin-import">
+            <h3>数据导入</h3>
+            <p class="admin-lead">支持 JSON、Excel（.xlsx/.xlsm）和 SQL。路径为服务器本地文件，大文件建议使用 CLI。</p>
+            <form id="importForm" class="admin-form import-form">
+              <label>
+                <span>文件路径</span>
+                <input id="importPath" placeholder="/root/PolicySearch/data/pkulaw.json" required />
+              </label>
+              <div class="import-grid">
+                <label>
+                  <span>格式</span>
+                  <select id="importFormat">
+                    <option value="auto">自动识别</option>
+                    <option value="json">JSON</option>
+                    <option value="excel">Excel</option>
+                    <option value="sql">SQL</option>
+                  </select>
+                </label>
+                <label>
+                  <span>批大小</span>
+                  <input id="importBatch" type="number" min="1" max="5000" value="500" />
+                </label>
+                <label>
+                  <span>限制条数（0=全部）</span>
+                  <input id="importLimit" type="number" min="0" value="0" />
+                </label>
+                <label>
+                  <span>ZIP 密码（可选）</span>
+                  <input id="importZipPassword" type="password" autocomplete="off" />
+                </label>
+              </div>
+              <label class="scope-choice">
+                <input id="importReset" type="checkbox" />
+                <span>导入前清空现有文档和索引</span>
+              </label>
+              <label class="scope-choice">
+                <input id="importIndex" type="checkbox" checked />
+                <span>写入 PostgreSQL 后同步 OpenSearch</span>
+              </label>
+              <button class="btn solid" type="submit">开始导入</button>
+            </form>
+            <div class="import-job" id="importJob" hidden>
+              <div class="import-job-head">
+                <strong id="importJobStatus">等待开始</strong>
+                <span id="importJobCounts"></span>
+              </div>
+              <div class="progress-track"><div class="progress-bar" id="importProgress"></div></div>
+              <p class="import-message" id="importMessage"></p>
+            </div>
+          </div>
 
           <div class="admin-maintenance">
             <h3>数据维护</h3>

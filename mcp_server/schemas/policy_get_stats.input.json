@@ -1,8 +1,5 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "PolicyGetStatsInput",
-  "description": "获取检索服务运行状态。",
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {}
+  "properties": {},
+  "title": "policy_get_statsArguments",
+  "type": "object"
 }

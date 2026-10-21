@@ -104,7 +104,7 @@ async function main() {
         dependenciesOk ? "已安装" : "缺少依赖，请运行 npm run deploy"
       );
     } else {
-      warn("尚未创建 .venv，npm run deploy 会自动创建并安装依赖。");
+      warn("尚未创建 Python 虚拟环境，npm run deploy 会自动创建并安装依赖。");
     }
   } else {
     fail("未找到 Python 3.10+（python3 / python / py -3）。");

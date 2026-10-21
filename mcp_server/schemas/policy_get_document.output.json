@@ -1,17 +1,180 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "PolicyGetDocumentOutput",
-  "description": "政策文档详情，包含完整正文。",
-  "type": "object",
-  "additionalProperties": false,
-  "required": ["document"],
-  "properties": {
-    "document": { "$ref": "#/$defs/PolicyDocument" }
-  },
   "$defs": {
     "PolicyDocument": {
-      "type": "object",
       "additionalProperties": false,
+      "properties": {
+        "doc_id": {
+          "title": "Doc Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "doc_number": {
+          "title": "Doc Number",
+          "type": "string"
+        },
+        "issuer": {
+          "title": "Issuer",
+          "type": "string"
+        },
+        "region": {
+          "title": "Region",
+          "type": "string"
+        },
+        "category": {
+          "title": "Category",
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "issue_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Issue Date"
+        },
+        "effective_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Effective Date"
+        },
+        "summary": {
+          "title": "Summary",
+          "type": "string"
+        },
+        "source_url": {
+          "title": "Source Url",
+          "type": "string"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        },
+        "content": {
+          "title": "Content",
+          "type": "string"
+        },
+        "file_hash": {
+          "title": "File Hash",
+          "type": "string"
+        },
+        "created_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Created At"
+        },
+        "law_db_name": {
+          "title": "Law Db Name",
+          "type": "string"
+        },
+        "detail_url": {
+          "title": "Detail Url",
+          "type": "string"
+        },
+        "province": {
+          "title": "Province",
+          "type": "string"
+        },
+        "city": {
+          "title": "City",
+          "type": "string"
+        },
+        "county": {
+          "title": "County",
+          "type": "string"
+        },
+        "category_1": {
+          "title": "Category 1",
+          "type": "string"
+        },
+        "category_2": {
+          "title": "Category 2",
+          "type": "string"
+        },
+        "law_type": {
+          "title": "Law Type",
+          "type": "string"
+        },
+        "pub_depart": {
+          "title": "Pub Depart",
+          "type": "string"
+        },
+        "pub_num": {
+          "title": "Pub Num",
+          "type": "string"
+        },
+        "pub_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Pub Date"
+        },
+        "use_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Use Date"
+        },
+        "is_time": {
+          "title": "Is Time",
+          "type": "string"
+        },
+        "detail_flag": {
+          "title": "Detail Flag",
+          "type": "string"
+        },
+        "detail_html": {
+          "title": "Detail Html",
+          "type": "string"
+        },
+        "detail_md": {
+          "title": "Detail Md",
+          "type": "string"
+        },
+        "add_time": {
+          "title": "Add Time",
+          "type": "string"
+        }
+      },
       "required": [
         "doc_id",
         "title",
@@ -27,75 +190,38 @@
         "status",
         "content",
         "file_hash",
-        "created_at"
+        "created_at",
+        "law_db_name",
+        "detail_url",
+        "province",
+        "city",
+        "county",
+        "category_1",
+        "category_2",
+        "law_type",
+        "pub_depart",
+        "pub_num",
+        "pub_date",
+        "use_date",
+        "is_time",
+        "detail_flag",
+        "detail_html",
+        "detail_md",
+        "add_time"
       ],
-      "properties": {
-        "doc_id": {
-          "type": "string",
-          "minLength": 1,
-          "description": "文档唯一标识。"
-        },
-        "title": {
-          "type": "string",
-          "description": "政策标题。"
-        },
-        "doc_number": {
-          "type": "string",
-          "description": "文号；可能为空字符串。"
-        },
-        "issuer": {
-          "type": "string",
-          "description": "发布机关；可能为空字符串。"
-        },
-        "region": {
-          "type": "string",
-          "description": "适用地区；可能为空字符串。"
-        },
-        "category": {
-          "type": "string",
-          "description": "政策类型；可能为空字符串。"
-        },
-        "tags": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "主题标签。"
-        },
-        "issue_date": {
-          "type": ["string", "null"],
-          "format": "date",
-          "description": "发布日期；未知时为 null。"
-        },
-        "effective_date": {
-          "type": ["string", "null"],
-          "format": "date",
-          "description": "生效日期；未知时为 null。"
-        },
-        "summary": {
-          "type": "string",
-          "description": "文档摘要；可能为空字符串。"
-        },
-        "source_url": {
-          "type": "string",
-          "description": "原文链接；可能为空字符串。"
-        },
-        "status": {
-          "type": "string",
-          "description": "文档状态，例如 active。"
-        },
-        "content": {
-          "type": "string",
-          "description": "政策正文全文。"
-        },
-        "file_hash": {
-          "type": "string",
-          "description": "文件内容哈希；可能为空字符串。"
-        },
-        "created_at": {
-          "type": ["string", "null"],
-          "format": "date-time",
-          "description": "入库时间；未知时为 null。"
-        }
-      }
+      "title": "PolicyDocument",
+      "type": "object"
     }
-  }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "document": {
+      "$ref": "#/$defs/PolicyDocument"
+    }
+  },
+  "required": [
+    "document"
+  ],
+  "title": "GetDocumentOutput",
+  "type": "object"
 }

@@ -2,7 +2,7 @@
 
 面向中文政策文本的检索服务原型。**PostgreSQL 保存文档目录与原文，OpenSearch 2.19 + IK 提供中文分词和倒排检索，FastAPI 提供 API 并托管零构建前端。**
 
-当前仓库使用 320 份确定性示例数据，重点验证精确、短语、模糊与相关度检索链路；百万级导入、权限体系和 RAG 尚未实现。
+当前仓库使用 320 份确定性示例数据，重点验证精确、短语、模糊与相关度检索链路；百万级容量验证、权限体系和 RAG 尚未完成。
 
 ![检索界面](docs/screenshot.png)
 
@@ -13,8 +13,8 @@
   - `keyword`：BM25 关键词检索
   - `exact`：标题、摘要、正文短语匹配
   - `fuzzy`：`fuzziness=AUTO` 容错检索
-- **字段过滤**：发布机关、政策类型、适用地区、主题标签、发布日期范围
-- **分面统计**：按机关、类型、地区、标签聚合
+- **字段过滤**：法规库、省份、城市、区县、一级/二级分类、法规类型、发布机关、时效性、发布日期范围、实施日期范围
+- **分面统计**：按法规库、省份/城市/区县、分类、法规类型、发布机关、时效性聚合
 - **结果体验**：高亮、得分、分页、排序、详情抽屉、原文链接
 - **管理接口**：示例数据导入、按 PostgreSQL 重建索引、清空、运行状态
 - **可重复部署**：Node 脚本负责环境检测、配置生成、依赖安装、容器启动和数据库迁移
@@ -54,10 +54,13 @@ PolicySearcher/
 │  │     ├─ catalog.py          # PostgreSQL 批量 upsert / 查询 / 统计
 │  │     ├─ index_service.py    # OpenSearch 索引、mapping、bulk、IK 探测
 │  │     ├─ search_service.py   # 检索模式、过滤、分面、高亮
+│  │     ├─ importer.py         # JSON / Excel / SQL 流式导入与字段映射
+│  │     ├─ import_jobs.py      # 导入任务进度与后台执行
 │  │     ├─ token_service.py    # API Token 创建 / 撤销 / 校验
 │  │     └─ sample_data.py      # 确定性示例数据
 │  ├─ scripts/
 │  │  ├─ seed.py                # 示例数据导入
+│  │  ├─ import_data.py          # JSON / Excel / SQL 政策数据导入
 │  │  ├─ migrate.py             # 数据库迁移入口
 │  │  └─ *_test.py              # 检索 / 分词 / API 手工测试脚本
 │  └─ requirements.txt
@@ -72,6 +75,7 @@ PolicySearcher/
 │  ├─ doctor.mjs
 │  ├─ infra.mjs
 │  ├─ seed.mjs
+│  ├─ import.mjs
 │  ├─ migrate.mjs
 │  └─ lib.mjs
 ├─ mcp_server/                  # MCP 服务与 Input / Output Schema
@@ -93,7 +97,7 @@ PolicySearcher/
 | 依赖 | 要求 | 说明 |
 | --- | --- | --- |
 | Node.js | **≥ 20，建议 22** | npm 随 Node 安装；仓库含 `.nvmrc` |
-| Python | **3.10+** | 部署脚本会创建 `.venv` 并安装后端依赖 |
+| Python | **3.10+** | Linux 需安装 `python3-venv` / `python3-pip`；部署脚本创建平台专属虚拟环境（Windows `.venv` / Linux `.venv-linux`）并安装后端依赖 |
 | Docker | Engine + Compose v2 | Linux / macOS 使用原生 Docker；Windows 可用 Docker Desktop 或 WSL 内的 Docker |
 
 > Node、Python、Docker 属于宿主机前置环境，不会被 npm 自动安装。
@@ -110,7 +114,7 @@ npm run deploy
 
 1. 检测 Node、Python、Docker、Compose、端口和磁盘空间；
 2. 生成项目根目录 `.env`（已被 `.gitignore` 忽略）；
-3. 创建 `.venv` 并安装 `backend/requirements.txt`；
+3. 创建平台专属 Python 虚拟环境（Windows `.venv` / Linux `.venv-linux`）并安装 `backend/requirements.txt`；
 4. 启动 PostgreSQL 与 OpenSearch + IK 容器；
 5. 等待数据库和 OpenSearch 通过健康检查；
 6. 执行数据库迁移并记录 `schema_version`；
@@ -192,6 +196,7 @@ npm run infra:down
 | `npm run migrate` | 检查并应用数据库迁移 |
 | `npm run seed -- 320` | 数据库为空时导入示例数据 |
 | `npm run seed -- 320 --reset` | 清空并重新导入示例数据 |
+| `npm run import -- <path> --format json` | 导入 JSON / Excel / SQL 政策数据 |
 | `npm run infra:up` | 启动并构建容器 |
 | `npm run infra:down` | 停止容器（保留数据卷） |
 | `npm run infra:status` | 查看容器状态 |
@@ -205,7 +210,8 @@ npm run infra:down
 
 - 管理员 JWT 登录
 - 创建 / 查看 / 撤销 API Token
-- 导出示例数据、重建索引、清空数据
+- JSON / Excel / SQL 导入任务与进度
+- 导入示例数据、重建索引、清空数据
 
 初始管理员密码由 `npm run deploy` 生成并只打印一次。密码丢失时，清空 `.env` 中的 `ADMIN_PASSWORD_HASH` 后重新运行 `npm run deploy` 生成新密码。
 
@@ -302,6 +308,9 @@ WSL_DISTRO=Ubuntu
 | `GET` | `/api/admin/tokens` | 列出 API Token（管理员） |
 | `POST` | `/api/admin/tokens` | 创建 API Token（管理员，Token 只返回一次） |
 | `DELETE` | `/api/admin/tokens/{jti}` | 撤销 API Token（管理员） |
+| `POST` | `/api/admin/import` | 启动 JSON / Excel / SQL 导入任务（管理员） |
+| `GET` | `/api/admin/import` | 查看导入任务列表（管理员） |
+| `GET` | `/api/admin/import/{job_id}` | 查看导入进度（管理员） |
 | `POST` | `/api/admin/seed` | 导入示例数据（管理员） |
 | `POST` | `/api/admin/reindex` | 按 PostgreSQL 全量重建 OpenSearch 索引（管理员） |
 | `POST` | `/api/admin/clear` | 清空文档与索引（管理员） |
@@ -318,12 +327,20 @@ MCP 使用见 [docs/mcp.md](docs/mcp.md)，Input / Output Schema 设计见 [docs
   "query": "增值税留抵退税",
   "mode": "smart",
   "filters": {
-    "issuers": [],
-    "categories": ["税收优惠"],
-    "regions": ["全国"],
-    "tags": [],
-    "date_from": "2020-01-01",
-    "date_to": null
+    "law_db_names": [],
+    "provinces": ["北京市"],
+    "cities": [],
+    "counties": [],
+    "category_1": ["税收优惠"],
+    "category_2": [],
+    "law_types": [],
+    "pub_departments": [],
+    "pub_nums": [],
+    "time_statuses": ["现行有效"],
+    "pub_date_from": "2020-01-01",
+    "pub_date_to": null,
+    "use_date_from": null,
+    "use_date_to": null
   },
   "page": 1,
   "size": 10,
@@ -348,7 +365,7 @@ MCP 使用见 [docs/mcp.md](docs/mcp.md)，Input / Output Schema 设计见 [docs
   "query": "增值税留抵退税",
   "hits": [
     {
-      "doc_id": "doc-000123",
+      "doc_id": "pkulaw-1",
       "title": "关于优化增值税留抵退税的意见",
       "doc_number": "国办发〔2024〕12号",
       "issuer": "国务院",
@@ -356,6 +373,20 @@ MCP 使用见 [docs/mcp.md](docs/mcp.md)，Input / Output Schema 设计见 [docs
       "category": "税收优惠",
       "tags": ["减税降费", "惠企政策"],
       "issue_date": "2024-05-10",
+      "law_db_name": "lar",
+      "detail_url": "8ef46f8ae2b7ce1207961d9a013f7286bdfb",
+      "province": "北京市",
+      "city": "北京市",
+      "county": "",
+      "category_1": "税收优惠",
+      "category_2": "增值税留抵退税",
+      "law_type": "地方性法规",
+      "pub_depart": "国务院",
+      "pub_num": "国办发〔2024〕12号",
+      "pub_date": "2024-05-10",
+      "use_date": "2024-06-01",
+      "is_time": "现行有效",
+      "add_time": "2024-05-11",
       "score": 65.20734,
       "highlights": [
         { "field": "title", "text": "关于优化<mark>增值税留抵退税</mark>的意见" }
@@ -366,10 +397,139 @@ MCP 使用见 [docs/mcp.md](docs/mcp.md)，Input / Output Schema 设计见 [docs
     "issuers": [{ "value": "国务院", "count": 8 }],
     "categories": [{ "value": "税收优惠", "count": 17 }],
     "regions": [{ "value": "全国", "count": 9 }],
-    "tags": [{ "value": "减税降费", "count": 7 }]
+    "tags": [{ "value": "减税降费", "count": 7 }],
+    "law_db_names": [{ "value": "lar", "count": 17 }],
+    "provinces": [{ "value": "北京市", "count": 6 }],
+    "cities": [{ "value": "北京市", "count": 6 }],
+    "counties": [],
+    "category_1": [{ "value": "税收优惠", "count": 17 }],
+    "category_2": [{ "value": "增值税留抵退税", "count": 5 }],
+    "law_types": [{ "value": "地方性法规", "count": 9 }],
+    "pub_departments": [{ "value": "国务院", "count": 8 }],
+    "time_statuses": [{ "value": "现行有效", "count": 17 }]
   }
 }
 ```
+
+## 数据导入
+
+支持三种格式：
+
+| 格式 | 输入 | 说明 |
+| --- | --- | --- |
+| JSON | `.json` / `.zip` | 支持顶层数组，或 `{"RECORDS": [...]}` / `{"records": [...]}` |
+| Excel | `.xlsx` / `.xlsm` / `.zip` | 读取第一个工作表，第一行为表头 |
+| SQL | `.sql` / `.zip` | 解析 MySQL `INSERT INTO ... VALUES (...)`，支持多行 VALUES |
+
+### CLI
+
+```bash
+npm run import -- "/path/to/data.json" --format json
+npm run import -- "/path/to/data.xlsx" --format excel
+npm run import -- "/path/to/data.sql.zip" --format sql --zip-password "***"
+```
+
+也可以直接调用 Python：
+
+```bash
+python backend/scripts/import_data.py "/path/to/data.json" --format json
+```
+
+常用参数：
+
+```text
+--limit 1000          只导入前 1000 条，适合先验证
+--batch-size 500      PostgreSQL / OpenSearch 批大小
+--reset               导入前清空已有文档和索引
+--no-index            只写 PostgreSQL，之后用管理接口重建索引
+--zip-password        加密 ZIP 的密码
+--sheet               指定 Excel 工作表
+```
+
+`--no-index` 不会清理或更新 OpenSearch；如果同时使用 `--reset`，重置后需要重新建立索引。
+
+### 管理接口
+
+管理员登录后可调用：
+
+```http
+POST /api/admin/import
+Content-Type: application/json
+Authorization: Bearer <admin-jwt>
+
+{
+  "path": "/path/to/data.json",
+  "format": "json",
+  "batch_size": 500,
+  "limit": 0,
+  "index": true,
+  "reset": false,
+  "zip_password": null
+}
+```
+
+任务异步执行，返回 `job_id`，通过：
+
+```http
+GET /api/admin/import/{job_id}
+```
+
+查看进度。管理页面也提供“数据导入”表单，适合导入较小的 JSON / Excel 文件；大文件建议使用 CLI。
+
+### 字段映射
+
+导入器会把常见字段映射到 `documents`：
+
+| 源字段 | 目标字段 |
+| --- | --- |
+| `id` / `doc_id` | `doc_id`（数字 id 加 `pkulaw-` 前缀） |
+| `title` / `标题` | `title` |
+| `pub_num` / `doc_number` / `文号` | `doc_number` |
+| `pub_depart` / `issuer` / `发布机关` | `issuer` |
+| `province` / `region` / `地区` | `region` |
+| `category_1` / `category` | `category` |
+| `tags` / `category_1` / `category_2` / `law_type` | `tags` |
+| `pub_date` / `issue_date` / `发布日期` | `issue_date` |
+| `use_date` / `effective_date` / `实施日期` | `effective_date` |
+| `detail_md` / `detail_flag` / `detail_html` / `content` | `content` |
+| `summary` / `摘要` | `summary` |
+| `detail_url` / `source_url` / `url` | `source_url` |
+| `is_time` / `status` | `status`（“现行有效”映射为 `active`） |
+
+JSON 中的 `detail_md`、`detail_flag`、`detail_html` 会依次作为正文候选；HTML 会转成纯文本。
+
+### 大规模导入
+
+当前样本中的 JSON / SQL 压缩包接近 90GB，建议：
+
+1. 先用 `--limit 1000` 验证字段和分词；
+2. 用 `--no-index` 只写 PostgreSQL；
+3. 数据落库后，再通过管理接口 `/api/admin/reindex` 或 `npm run seed -- 320 --reset` 之外的重建流程建立索引；
+4. 根据服务器磁盘和 OpenSearch 堆内存分批导入。
+
+SQL 压缩包如果加密，必须提供 `--zip-password`。Excel 目前只支持 `.xlsx` / `.xlsm`，不解析旧版 `.xls`。
+
+### 检索字段
+
+前端筛选、检索结果、MCP 工具字段已与 PKUlaw SQL 字段对齐：
+
+```text
+law_db_name, province, city, county,
+category_1, category_2, law_type,
+pub_depart, pub_num, pub_date, use_date,
+is_time, detail_url, detail_md
+```
+
+`doc_number`、`issuer`、`region`、`category`、`issue_date`、`effective_date` 等旧字段仍然保留，用于兼容已有数据和旧客户端。
+
+前端筛选：
+
+- 法规库、省份、城市、区县
+- 一级分类、二级分类
+- 法规类型、发布机关、时效性
+- 发布日期范围、实施日期范围
+
+MCP 的 `policy_search_documents` 输入过滤器和输出 `hits` 使用同一组字段；完整字段见 [docs/mcp-schema-v1.md](docs/mcp-schema-v1.md)。
 
 ## 索引与 IK
 
@@ -400,10 +560,10 @@ npm run seed -- 320 --reset
 验证分词：
 
 ```bash
-.venv/bin/python backend/scripts/analyze_test.py
+.venv-linux/bin/python backend/scripts/analyze_test.py
 ```
 
-Windows 下 Python 路径为 `.venv\Scripts\python.exe`。
+Windows 下 Python 路径为 `.venv\Scripts\python.exe`；Linux / macOS 为 `.venv-linux/bin/python`。
 
 ## 数据库版本
 
@@ -433,18 +593,18 @@ npm run seed -- 320 --reset
 后端测试脚本：
 
 ```bash
-.venv/bin/python backend/scripts/search_test.py
-.venv/bin/python backend/scripts/analyze_test.py
-.venv/bin/python backend/scripts/http_test.py
+.venv-linux/bin/python backend/scripts/search_test.py
+.venv-linux/bin/python backend/scripts/analyze_test.py
+.venv-linux/bin/python backend/scripts/http_test.py
 ```
 
-Windows 下将 `.venv/bin/python` 换成 `.venv\Scripts\python.exe`。
+Windows 下将 `.venv-linux/bin/python` 换成 `.venv\Scripts\python.exe`。
 
 ## 已知限制
 
-- 示例数据为 320 篇，尚未完成百万级导入与容量验证。
+- 示例数据为 320 篇；JSON / Excel / SQL 导入已支持，但尚未完成百万级容量验证。
 - OpenSearch 当前为单节点、单分片、0 副本、1GB heap；生产环境需要多分片、副本和独立数据盘。
-- 尚未接入登录、角色和文档级权限。
+- 已有管理员 JWT 和 API Token，但尚未接入细粒度角色与文档级权限。
 - 尚无 PDF/Word/HTML 批量导入 UI、任务队列和去重流水线。
 - 尚未接入 embedding、向量库与 RAG 重排。
 

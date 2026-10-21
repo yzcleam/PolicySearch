@@ -1,8 +1,13 @@
 const FACETS = [
-  { key: "issuers", label: "发布机关" },
-  { key: "categories", label: "政策类型" },
-  { key: "regions", label: "适用地区" },
-  { key: "tags", label: "主题标签" },
+  { key: "law_db_names", label: "法规库" },
+  { key: "provinces", label: "省份" },
+  { key: "cities", label: "城市" },
+  { key: "counties", label: "区县" },
+  { key: "category_1", label: "一级分类" },
+  { key: "category_2", label: "二级分类" },
+  { key: "law_types", label: "法规类型" },
+  { key: "pub_departments", label: "发布机关" },
+  { key: "time_statuses", label: "时效性" },
 ];
 
 const MODE_HINTS = {
@@ -23,12 +28,20 @@ const state = {
   query: "",
   mode: "smart",
   filters: {
-    issuers: [],
-    categories: [],
-    regions: [],
-    tags: [],
-    date_from: null,
-    date_to: null,
+    law_db_names: [],
+    provinces: [],
+    cities: [],
+    counties: [],
+    category_1: [],
+    category_2: [],
+    law_types: [],
+    pub_departments: [],
+    pub_nums: [],
+    time_statuses: [],
+    pub_date_from: null,
+    pub_date_to: null,
+    use_date_from: null,
+    use_date_to: null,
   },
   sort: "relevance",
   page: 1,
@@ -146,12 +159,20 @@ async function refreshStats() {
 
 function cleanFilters() {
   return {
-    issuers: state.filters.issuers,
-    categories: state.filters.categories,
-    regions: state.filters.regions,
-    tags: state.filters.tags,
-    date_from: state.filters.date_from || null,
-    date_to: state.filters.date_to || null,
+    law_db_names: state.filters.law_db_names,
+    provinces: state.filters.provinces,
+    cities: state.filters.cities,
+    counties: state.filters.counties,
+    category_1: state.filters.category_1,
+    category_2: state.filters.category_2,
+    law_types: state.filters.law_types,
+    pub_departments: state.filters.pub_departments,
+    pub_nums: state.filters.pub_nums,
+    time_statuses: state.filters.time_statuses,
+    pub_date_from: state.filters.pub_date_from || null,
+    pub_date_to: state.filters.pub_date_to || null,
+    use_date_from: state.filters.use_date_from || null,
+    use_date_to: state.filters.use_date_to || null,
   };
 }
 
@@ -254,13 +275,24 @@ function renderResults(result) {
 
   container.innerHTML = result.hits
     .map((hit) => {
+      const categoryValue = hit.category_1 || hit.category || "";
+      const issuerValue = hit.pub_depart || hit.issuer || "未知机关";
+      const docNumberValue = hit.pub_num || hit.doc_number || "无文号";
+      const dateValue = hit.pub_date || hit.issue_date;
+      const regionValue =
+        [hit.province, hit.city, hit.county].filter(Boolean).join(" / ") ||
+        hit.region ||
+        "";
       const tags = (hit.tags || [])
-        .filter((tag) => tag !== hit.category)
+        .filter((tag) => tag !== categoryValue)
         .slice(0, 4)
         .map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`)
         .join("");
-      const category = hit.category
-        ? `<span class="tag cat">${escapeHtml(hit.category)}</span>`
+      const category = categoryValue
+        ? `<span class="tag cat">${escapeHtml(categoryValue)}</span>`
+        : "";
+      const status = hit.is_time
+        ? `<span class="tag status">${escapeHtml(hit.is_time)}</span>`
         : "";
       const score = hit.score != null ? Number(hit.score).toFixed(2) : "";
       const scoreLine = score ? `<div class="score">${score}</div>` : "";
@@ -272,19 +304,19 @@ function renderResults(result) {
             <div class="hit-main">
               <h2 class="hit-title">${titleHtml(hit)}</h2>
               <div class="hit-meta">
-                <span class="issuer">${escapeHtml(hit.issuer || "未知机关")}</span>
+                <span class="issuer">${escapeHtml(issuerValue)}</span>
                 <span class="sep">/</span>
-                <span class="docno">${escapeHtml(hit.doc_number || "无文号")}</span>
+                <span class="docno">${escapeHtml(docNumberValue)}</span>
                 <span class="sep">/</span>
-                <span>${formatDate(hit.issue_date)}</span>
-                ${hit.region ? `<span class="sep">/</span><span>${escapeHtml(hit.region)}</span>` : ""}
+                <span>${formatDate(dateValue)}</span>
+                ${regionValue ? `<span class="sep">/</span><span>${escapeHtml(regionValue)}</span>` : ""}
               </div>
               <p class="hit-snippet">${snippetHtml(hit)}</p>
-              <div class="hit-tags">${category}${tags}</div>
+              <div class="hit-tags">${category}${status}${tags}</div>
             </div>
             <div class="hit-side">
               ${scoreLine}
-              <div>${formatDate(hit.issue_date)}</div>
+              <div>${formatDate(dateValue)}</div>
             </div>
           </div>
         </article>`;
@@ -304,12 +336,20 @@ function emptyState() {
   }
 
   const hasFilters =
-    state.filters.issuers.length ||
-    state.filters.categories.length ||
-    state.filters.regions.length ||
-    state.filters.tags.length ||
-    state.filters.date_from ||
-    state.filters.date_to;
+    state.filters.law_db_names.length ||
+    state.filters.provinces.length ||
+    state.filters.cities.length ||
+    state.filters.counties.length ||
+    state.filters.category_1.length ||
+    state.filters.category_2.length ||
+    state.filters.law_types.length ||
+    state.filters.pub_departments.length ||
+    state.filters.pub_nums.length ||
+    state.filters.time_statuses.length ||
+    state.filters.pub_date_from ||
+    state.filters.pub_date_to ||
+    state.filters.use_date_from ||
+    state.filters.use_date_to;
 
   return `
     <div class="empty">
@@ -431,30 +471,40 @@ async function openDocument(docId) {
 
   try {
     const doc = await api(`/api/documents/${encodeURIComponent(docId)}`);
+    const categoryValue = doc.category_1 || doc.category || "";
     const tags = (doc.tags || [])
-      .filter((tag) => tag !== doc.category)
+      .filter((tag) => tag !== categoryValue)
       .map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`)
       .join("");
-    const paragraphs = String(doc.content || "")
+    const content = doc.detail_md || doc.content || "";
+    const paragraphs = String(content)
       .split(/\n{2,}/)
       .filter(Boolean)
       .map((text) => `<p>${escapeHtml(text)}</p>`)
       .join("");
-    const source = doc.source_url
-      ? `<a href="${escapeHtml(doc.source_url)}" target="_blank" rel="noreferrer">打开原文 ↗</a>`
+    const sourceUrl = doc.detail_url || doc.source_url;
+    const source = sourceUrl
+      ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">打开原文 ↗</a>`
       : "";
+    const regionValue =
+      [doc.province, doc.city, doc.county].filter(Boolean).join(" / ") ||
+      doc.region ||
+      "—";
 
     $("#drawerBody").innerHTML = `
       <div class="doc-kicker">POLICY DOCUMENT · ${escapeHtml(doc.doc_id)}</div>
       <h2 class="doc-title">${escapeHtml(doc.title)}</h2>
       <dl class="doc-grid">
-        <dt>发布机关</dt><dd>${escapeHtml(doc.issuer || "—")}</dd>
-        <dt>文号</dt><dd class="mono">${escapeHtml(doc.doc_number || "—")}</dd>
-        <dt>发布日期</dt><dd>${formatDate(doc.issue_date)}</dd>
-        <dt>施行日期</dt><dd>${formatDate(doc.effective_date)}</dd>
-        <dt>政策类型</dt><dd>${escapeHtml(doc.category || "—")}</dd>
-        <dt>适用地区</dt><dd>${escapeHtml(doc.region || "—")}</dd>
-        <dt>状态</dt><dd>${escapeHtml(doc.status || "active")}</dd>
+        <dt>法规库</dt><dd>${escapeHtml(doc.law_db_name || "—")}</dd>
+        <dt>发布机关</dt><dd>${escapeHtml(doc.pub_depart || doc.issuer || "—")}</dd>
+        <dt>文号</dt><dd class="mono">${escapeHtml(doc.pub_num || doc.doc_number || "—")}</dd>
+        <dt>发布日期</dt><dd>${formatDate(doc.pub_date || doc.issue_date)}</dd>
+        <dt>实施日期</dt><dd>${formatDate(doc.use_date || doc.effective_date)}</dd>
+        <dt>一级分类</dt><dd>${escapeHtml(categoryValue || "—")}</dd>
+        <dt>二级分类</dt><dd>${escapeHtml(doc.category_2 || "—")}</dd>
+        <dt>法规类型</dt><dd>${escapeHtml(doc.law_type || "—")}</dd>
+        <dt>地区</dt><dd>${escapeHtml(regionValue)}</dd>
+        <dt>时效性</dt><dd>${escapeHtml(doc.is_time || doc.status || "—")}</dd>
         <dt>内容指纹</dt><dd class="mono">${escapeHtml(doc.file_hash || "—")}</dd>
       </dl>
       <div class="doc-tags">${tags}</div>
@@ -544,15 +594,25 @@ async function clearData() {
 
 function clearFilters() {
   state.filters = {
-    issuers: [],
-    categories: [],
-    regions: [],
-    tags: [],
-    date_from: null,
-    date_to: null,
+    law_db_names: [],
+    provinces: [],
+    cities: [],
+    counties: [],
+    category_1: [],
+    category_2: [],
+    law_types: [],
+    pub_departments: [],
+    pub_nums: [],
+    time_statuses: [],
+    pub_date_from: null,
+    pub_date_to: null,
+    use_date_from: null,
+    use_date_to: null,
   };
   $("#dateFrom").value = "";
   $("#dateTo").value = "";
+  $("#useDateFrom").value = "";
+  $("#useDateTo").value = "";
   expandedFacets.clear();
   runSearch(true);
 }
@@ -648,12 +708,22 @@ function bind() {
   });
 
   $("#dateFrom").addEventListener("change", (event) => {
-    state.filters.date_from = event.target.value || null;
+    state.filters.pub_date_from = event.target.value || null;
     runSearch(true);
   });
 
   $("#dateTo").addEventListener("change", (event) => {
-    state.filters.date_to = event.target.value || null;
+    state.filters.pub_date_to = event.target.value || null;
+    runSearch(true);
+  });
+
+  $("#useDateFrom").addEventListener("change", (event) => {
+    state.filters.use_date_from = event.target.value || null;
+    runSearch(true);
+  });
+
+  $("#useDateTo").addEventListener("change", (event) => {
+    state.filters.use_date_to = event.target.value || null;
     runSearch(true);
   });
 
@@ -764,6 +834,7 @@ async function adminLogin(event) {
 }
 
 function adminLogout() {
+  clearTimeout(importPollTimer);
   setAdminToken("");
   showAdminView(false);
   const created = $("#tokenCreated");
@@ -863,6 +934,93 @@ async function copyCreatedToken() {
   }
 }
 
+let importPollTimer = null;
+
+function importStatusLabel(status) {
+  return {
+    queued: "排队中",
+    running: "导入中",
+    completed: "已完成",
+    failed: "失败",
+  }[status] || status;
+}
+
+function renderImportJob(job) {
+  const box = $("#importJob");
+  if (!box) return;
+  box.hidden = false;
+  $("#importJobStatus").textContent = importStatusLabel(job.status);
+  $("#importJobCounts").textContent =
+    `读取 ${job.processed} · 导入 ${job.imported} · 索引 ${job.indexed} · 跳过 ${job.skipped} · 失败 ${job.failed}`;
+  const progress = $("#importProgress");
+  if (progress) {
+    if (job.status === "completed") progress.style.width = "100%";
+    else if (job.status === "failed") progress.style.width = "100%";
+    else progress.style.width = `${Math.min(90, 8 + Math.log10(job.processed + 1) * 22)}%`;
+  }
+  $("#importMessage").textContent = job.message || "";
+}
+
+async function pollImport(jobId) {
+  clearTimeout(importPollTimer);
+  try {
+    const job = await api(`/api/admin/import/${encodeURIComponent(jobId)}`, { auth: true });
+    renderImportJob(job);
+    if (job.status === "queued" || job.status === "running") {
+      importPollTimer = setTimeout(() => pollImport(jobId), 1500);
+    } else {
+      const form = $("#importForm");
+      if (form) form.querySelector("button[type=submit]").disabled = false;
+      if (job.status === "completed") showToast(job.message || "导入完成");
+      else showToast(job.message || "导入失败", "error");
+      await refreshStats();
+      await runSearch(true);
+    }
+  } catch (error) {
+    const form = $("#importForm");
+    if (form) form.querySelector("button[type=submit]").disabled = false;
+    showToast(`读取导入状态失败：${error.message}`, "error");
+  }
+}
+
+async function startImport(event) {
+  event.preventDefault();
+  const path = $("#importPath").value.trim();
+  if (!path) return showToast("请填写服务器文件路径", "error");
+  const batch = Number($("#importBatch").value || 500);
+  const limit = Number($("#importLimit").value || 0);
+  if (!Number.isInteger(batch) || batch < 1 || batch > 5000) {
+    return showToast("批大小必须在 1-5000 之间", "error");
+  }
+  if (!Number.isInteger(limit) || limit < 0) {
+    return showToast("限制条数必须大于等于 0", "error");
+  }
+  const body = {
+    path,
+    format: $("#importFormat").value,
+    batch_size: batch,
+    limit,
+    index: $("#importIndex").checked,
+    reset: $("#importReset").checked,
+    zip_password: $("#importZipPassword").value || null,
+  };
+  const form = $("#importForm");
+  const button = form.querySelector("button[type=submit]");
+  button.disabled = true;
+  try {
+    const job = await api("/api/admin/import", {
+      method: "POST",
+      auth: true,
+      body: JSON.stringify(body),
+    });
+    renderImportJob(job);
+    pollImport(job.id);
+  } catch (error) {
+    button.disabled = false;
+    showToast(`启动导入失败：${error.message}`, "error");
+  }
+}
+
 function bindAdmin() {
   $("#adminBtn")?.addEventListener("click", openAdmin);
   $("#adminClose")?.addEventListener("click", closeAdmin);
@@ -874,6 +1032,7 @@ function bindAdmin() {
   $("#tokenForm")?.addEventListener("submit", createToken);
   $("#refreshTokens")?.addEventListener("click", loadTokens);
   $("#copyToken")?.addEventListener("click", copyCreatedToken);
+  $("#importForm")?.addEventListener("submit", startImport);
   $("#tokenList")?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-revoke]");
     if (button) revokeToken(button.dataset.revoke);

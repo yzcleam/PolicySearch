@@ -21,7 +21,7 @@ async function main() {
   }
   const python = venvPythonPath();
   if (!fs.existsSync(python)) {
-    throw new Error("缺少 .venv，请先运行 npm run deploy。");
+    throw new Error("缺少 Python 虚拟环境，请先运行 npm run deploy。");
   }
   const env = readEnv(ENV_FILE);
   info("检查并应用数据库迁移…");

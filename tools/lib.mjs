@@ -14,6 +14,7 @@ export const IS_LINUX = process.platform === "linux";
 if (IS_WIN) process.env.WSL_UTF8 = process.env.WSL_UTF8 || "1";
 export const ENV_FILE = path.join(ROOT, ".env");
 export const ENV_EXAMPLE = path.join(ROOT, ".env.example");
+export const VENV_DIR = process.env.VENV_DIR || (IS_WIN ? ".venv" : ".venv-linux");
 export const COMPOSE_FILE = path.join(ROOT, "docker-compose.yml");
 export const REQUIREMENTS = path.join(ROOT, "backend", "requirements.txt");
 export const IK_ZIP = path.join(
@@ -232,8 +233,8 @@ export function pythonEnv(extra = {}) {
 
 export function venvPythonPath(root = ROOT) {
   return IS_WIN
-    ? path.join(root, ".venv", "Scripts", "python.exe")
-    : path.join(root, ".venv", "bin", "python");
+    ? path.join(root, VENV_DIR, "Scripts", "python.exe")
+    : path.join(root, VENV_DIR, "bin", "python");
 }
 
 export function detectPython() {
@@ -278,7 +279,7 @@ export function pythonPackagesOk(python) {
     [
       ...args,
       "-c",
-      "import fastapi, sqlalchemy, psycopg2, opensearchpy, pydantic_settings, mcp, httpx; print('ok')",
+      "import fastapi, sqlalchemy, psycopg2, opensearchpy, pydantic_settings, mcp, httpx, ijson, openpyxl; print('ok')",
     ],
     { timeout: 30_000, env: pythonEnv() }
   );
@@ -299,20 +300,22 @@ export async function ensureVenv({
 
   const venvPython = venvPythonPath();
   if (!fs.existsSync(venvPython)) {
-    info(`创建 Python 虚拟环境 .venv（来源：${base.source}，Python ${base.version}）`);
-    await runStreamChecked(base.cmd, [...base.args, "-m", "venv", ".venv"], {
+    info(`创建 Python 虚拟环境 ${VENV_DIR}（来源：${base.source}，Python ${base.version}）`);
+    await runStreamChecked(base.cmd, [...base.args, "-m", "venv", VENV_DIR], {
       cwd: ROOT,
       env: pythonEnv(),
     });
   }
 
   if (!fs.existsSync(venvPython)) {
-    throw new Error("虚拟环境创建失败：.venv 中找不到 Python 可执行文件。");
+    throw new Error(`虚拟环境创建失败：${VENV_DIR} 中找不到 Python 可执行文件。`);
   }
 
   if (skipInstall) {
     if (!pythonPackagesOk(venvPython)) {
-      throw new Error("已指定 --skip-install，但 .venv 中缺少依赖。请去掉该参数后重试。");
+      throw new Error(
+        `已指定 --skip-install，但 ${VENV_DIR} 中缺少依赖。请去掉该参数后重试。`
+      );
     }
     ok(`复用已有虚拟环境（Python ${base.version}）`);
     return venvPython;
@@ -322,6 +325,27 @@ export async function ensureVenv({
     PIP_DISABLE_PIP_VERSION_CHECK: "1",
     ...(pipIndexUrl ? { PIP_INDEX_URL: pipIndexUrl } : {}),
   });
+
+  const pipCheck = run(venvPython, ["-m", "pip", "--version"], {
+    cwd: ROOT,
+    env: pipEnv,
+    timeout: 30_000,
+  });
+  if (!pipCheck.ok) {
+    info(`当前虚拟环境缺少 pip，尝试执行 ensurepip…`);
+    const ensurePip = await runStream(
+      venvPython,
+      ["-m", "ensurepip", "--upgrade"],
+      { cwd: ROOT, env: pipEnv }
+    );
+    if (ensurePip.code !== 0) {
+      throw new Error(
+        `当前虚拟环境 ${VENV_DIR} 缺少 pip，且 ensurepip 不可用。` +
+          "Debian/Ubuntu 请先安装 python3-venv，再删除该虚拟环境目录后重新运行 npm run deploy；" +
+          "Windows 请用 py -3 -m venv .venv 重建。"
+      );
+    }
+  }
 
   const pipUpgrade = await runStream(
     venvPython,

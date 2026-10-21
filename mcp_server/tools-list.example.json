@@ -75,6 +75,152 @@
                   "default": null,
                   "description": "发布日期上界，ISO 8601 日期，例如 2024-12-31。",
                   "title": "Date To"
+                },
+                "law_db_names": {
+                  "description": "法规库名称，例如 lar。",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 20,
+                  "title": "Law Db Names",
+                  "type": "array"
+                },
+                "provinces": {
+                  "description": "省级地区，例如 北京市、广东省。",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 20,
+                  "title": "Provinces",
+                  "type": "array"
+                },
+                "cities": {
+                  "description": "城市，例如 深圳市。",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 20,
+                  "title": "Cities",
+                  "type": "array"
+                },
+                "counties": {
+                  "description": "区县。",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 20,
+                  "title": "Counties",
+                  "type": "array"
+                },
+                "category_1": {
+                  "description": "一级分类，例如 科技创新。",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 20,
+                  "title": "Category 1",
+                  "type": "array"
+                },
+                "category_2": {
+                  "description": "二级分类，例如 专精特新。",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 20,
+                  "title": "Category 2",
+                  "type": "array"
+                },
+                "law_types": {
+                  "description": "法规类型，例如 地方性法规、行政法规。",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 20,
+                  "title": "Law Types",
+                  "type": "array"
+                },
+                "pub_departments": {
+                  "description": "发布机关，对应源字段 pub_depart。",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 20,
+                  "title": "Pub Departments",
+                  "type": "array"
+                },
+                "pub_nums": {
+                  "description": "文号，对应源字段 pub_num。",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 20,
+                  "title": "Pub Nums",
+                  "type": "array"
+                },
+                "time_statuses": {
+                  "description": "时效性，例如 现行有效、已失效。",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 20,
+                  "title": "Time Statuses",
+                  "type": "array"
+                },
+                "pub_date_from": {
+                  "anyOf": [
+                    {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "发布日期下界，对应源字段 pub_date。",
+                  "title": "Pub Date From"
+                },
+                "pub_date_to": {
+                  "anyOf": [
+                    {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "发布日期上界，对应源字段 pub_date。",
+                  "title": "Pub Date To"
+                },
+                "use_date_from": {
+                  "anyOf": [
+                    {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "实施日期下界，对应源字段 use_date。",
+                  "title": "Use Date From"
+                },
+                "use_date_to": {
+                  "anyOf": [
+                    {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "实施日期上界，对应源字段 use_date。",
+                  "title": "Use Date To"
                 }
               },
               "title": "SearchFilters",
@@ -202,13 +348,85 @@
                   },
                   "title": "Tags",
                   "type": "array"
+                },
+                "law_db_names": {
+                  "items": {
+                    "$ref": "#/$defs/FacetBucket"
+                  },
+                  "title": "Law Db Names",
+                  "type": "array"
+                },
+                "provinces": {
+                  "items": {
+                    "$ref": "#/$defs/FacetBucket"
+                  },
+                  "title": "Provinces",
+                  "type": "array"
+                },
+                "cities": {
+                  "items": {
+                    "$ref": "#/$defs/FacetBucket"
+                  },
+                  "title": "Cities",
+                  "type": "array"
+                },
+                "counties": {
+                  "items": {
+                    "$ref": "#/$defs/FacetBucket"
+                  },
+                  "title": "Counties",
+                  "type": "array"
+                },
+                "category_1": {
+                  "items": {
+                    "$ref": "#/$defs/FacetBucket"
+                  },
+                  "title": "Category 1",
+                  "type": "array"
+                },
+                "category_2": {
+                  "items": {
+                    "$ref": "#/$defs/FacetBucket"
+                  },
+                  "title": "Category 2",
+                  "type": "array"
+                },
+                "law_types": {
+                  "items": {
+                    "$ref": "#/$defs/FacetBucket"
+                  },
+                  "title": "Law Types",
+                  "type": "array"
+                },
+                "pub_departments": {
+                  "items": {
+                    "$ref": "#/$defs/FacetBucket"
+                  },
+                  "title": "Pub Departments",
+                  "type": "array"
+                },
+                "time_statuses": {
+                  "items": {
+                    "$ref": "#/$defs/FacetBucket"
+                  },
+                  "title": "Time Statuses",
+                  "type": "array"
                 }
               },
               "required": [
                 "issuers",
                 "categories",
                 "regions",
-                "tags"
+                "tags",
+                "law_db_names",
+                "provinces",
+                "cities",
+                "counties",
+                "category_1",
+                "category_2",
+                "law_types",
+                "pub_departments",
+                "time_statuses"
               ],
               "title": "Facets",
               "type": "object"
@@ -307,6 +525,78 @@
                   "title": "Status",
                   "type": "string"
                 },
+                "law_db_name": {
+                  "title": "Law Db Name",
+                  "type": "string"
+                },
+                "detail_url": {
+                  "title": "Detail Url",
+                  "type": "string"
+                },
+                "province": {
+                  "title": "Province",
+                  "type": "string"
+                },
+                "city": {
+                  "title": "City",
+                  "type": "string"
+                },
+                "county": {
+                  "title": "County",
+                  "type": "string"
+                },
+                "category_1": {
+                  "title": "Category 1",
+                  "type": "string"
+                },
+                "category_2": {
+                  "title": "Category 2",
+                  "type": "string"
+                },
+                "law_type": {
+                  "title": "Law Type",
+                  "type": "string"
+                },
+                "pub_depart": {
+                  "title": "Pub Depart",
+                  "type": "string"
+                },
+                "pub_num": {
+                  "title": "Pub Num",
+                  "type": "string"
+                },
+                "pub_date": {
+                  "anyOf": [
+                    {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Pub Date"
+                },
+                "use_date": {
+                  "anyOf": [
+                    {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Use Date"
+                },
+                "is_time": {
+                  "title": "Is Time",
+                  "type": "string"
+                },
+                "add_time": {
+                  "title": "Add Time",
+                  "type": "string"
+                },
                 "score": {
                   "anyOf": [
                     {
@@ -339,6 +629,20 @@
                 "summary",
                 "source_url",
                 "status",
+                "law_db_name",
+                "detail_url",
+                "province",
+                "city",
+                "county",
+                "category_1",
+                "category_2",
+                "law_type",
+                "pub_depart",
+                "pub_num",
+                "pub_date",
+                "use_date",
+                "is_time",
+                "add_time",
                 "score",
                 "highlights"
               ],
@@ -543,6 +847,90 @@
                     }
                   ],
                   "title": "Created At"
+                },
+                "law_db_name": {
+                  "title": "Law Db Name",
+                  "type": "string"
+                },
+                "detail_url": {
+                  "title": "Detail Url",
+                  "type": "string"
+                },
+                "province": {
+                  "title": "Province",
+                  "type": "string"
+                },
+                "city": {
+                  "title": "City",
+                  "type": "string"
+                },
+                "county": {
+                  "title": "County",
+                  "type": "string"
+                },
+                "category_1": {
+                  "title": "Category 1",
+                  "type": "string"
+                },
+                "category_2": {
+                  "title": "Category 2",
+                  "type": "string"
+                },
+                "law_type": {
+                  "title": "Law Type",
+                  "type": "string"
+                },
+                "pub_depart": {
+                  "title": "Pub Depart",
+                  "type": "string"
+                },
+                "pub_num": {
+                  "title": "Pub Num",
+                  "type": "string"
+                },
+                "pub_date": {
+                  "anyOf": [
+                    {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Pub Date"
+                },
+                "use_date": {
+                  "anyOf": [
+                    {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Use Date"
+                },
+                "is_time": {
+                  "title": "Is Time",
+                  "type": "string"
+                },
+                "detail_flag": {
+                  "title": "Detail Flag",
+                  "type": "string"
+                },
+                "detail_html": {
+                  "title": "Detail Html",
+                  "type": "string"
+                },
+                "detail_md": {
+                  "title": "Detail Md",
+                  "type": "string"
+                },
+                "add_time": {
+                  "title": "Add Time",
+                  "type": "string"
                 }
               },
               "required": [
@@ -560,7 +948,24 @@
                 "status",
                 "content",
                 "file_hash",
-                "created_at"
+                "created_at",
+                "law_db_name",
+                "detail_url",
+                "province",
+                "city",
+                "county",
+                "category_1",
+                "category_2",
+                "law_type",
+                "pub_depart",
+                "pub_num",
+                "pub_date",
+                "use_date",
+                "is_time",
+                "detail_flag",
+                "detail_html",
+                "detail_md",
+                "add_time"
               ],
               "title": "PolicyDocument",
               "type": "object"

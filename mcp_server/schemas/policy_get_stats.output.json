@@ -1,9 +1,34 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "PolicyGetStatsOutput",
-  "description": "检索服务统计与可用性信息。",
-  "type": "object",
   "additionalProperties": false,
+  "properties": {
+    "documents": {
+      "minimum": 0,
+      "title": "Documents",
+      "type": "integer"
+    },
+    "index_docs": {
+      "minimum": 0,
+      "title": "Index Docs",
+      "type": "integer"
+    },
+    "index_size_bytes": {
+      "minimum": 0,
+      "title": "Index Size Bytes",
+      "type": "integer"
+    },
+    "analyzer": {
+      "title": "Analyzer",
+      "type": "string"
+    },
+    "engine": {
+      "title": "Engine",
+      "type": "string"
+    },
+    "status": {
+      "title": "Status",
+      "type": "string"
+    }
+  },
   "required": [
     "documents",
     "index_docs",
@@ -12,33 +37,6 @@
     "engine",
     "status"
   ],
-  "properties": {
-    "documents": {
-      "type": "integer",
-      "minimum": 0,
-      "description": "PostgreSQL 中的文档数。"
-    },
-    "index_docs": {
-      "type": "integer",
-      "minimum": 0,
-      "description": "OpenSearch 索引中的文档数。"
-    },
-    "index_size_bytes": {
-      "type": "integer",
-      "minimum": 0,
-      "description": "OpenSearch 索引占用字节数。"
-    },
-    "analyzer": {
-      "type": "string",
-      "description": "当前分词器，例如 ik。"
-    },
-    "engine": {
-      "type": "string",
-      "description": "存储与检索引擎组合，例如 postgresql + opensearch。"
-    },
-    "status": {
-      "type": "string",
-      "description": "服务状态，例如 ready。"
-    }
-  }
+  "title": "StatsOutput",
+  "type": "object"
 }

@@ -92,7 +92,7 @@ async function main() {
   const env = readEnv(ENV_FILE);
   const python = venvPythonPath();
   if (!fs.existsSync(python)) {
-    throw new Error("缺少 .venv，请先运行 npm run deploy。");
+    throw new Error("缺少 Python 虚拟环境，请先运行 npm run deploy。");
   }
 
   const host = String(args.host || env.APP_HOST || "127.0.0.1");
